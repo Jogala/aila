@@ -249,12 +249,39 @@
             display: block;
         }
 
-        .results-title {
-            font-size: 1.5rem;
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 1.5rem;
-            color: #4a5568;
-            border-bottom: 2px solid #e2e8f0;
             padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .results-title {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #4a5568;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(72, 187, 120, 0.3);
         }
 
         .summary-grid {
@@ -555,7 +582,12 @@
 
         <!-- Results Section -->
         <div class="results" id="results">
-            <h2 class="results-title">📊 Analysis Results</h2>
+            <div class="results-header">
+                <h2 class="results-title">📊 Analysis Results</h2>
+                <button id="exportResultsBtn" class="export-btn" style="display: none;">
+                    📥 Export JSON
+                </button>
+            </div>
             <div id="resultsContent"></div>
         </div>
     </div>
@@ -787,6 +819,53 @@
         function displayResults(result) {
             const resultsDiv = document.getElementById('results');
             const contentDiv = document.getElementById('resultsContent');
+            const exportBtn = document.getElementById('exportResultsBtn');
+
+            // Store complete results for export
+            window.lastResults = result;
+
+            // Show export button
+            exportBtn.style.display = 'flex';
+
+            // Set up export functionality
+            exportBtn.onclick = () => {
+                try {
+                    // Create a copy of results without document texts
+                    const exportData = { ...result };
+                    delete exportData.document1_text;
+                    delete exportData.document2_text;
+
+                    // Create filename with timestamp
+                    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                    const doc1Name = result.document1_name?.replace(/\.[^/.]+$/, '') || 'doc1';
+                    const doc2Name = result.document2_name?.replace(/\.[^/.]+$/, '') || 'doc2';
+                    const filename = `analysis_${doc1Name}_vs_${doc2Name}_${timestamp}.json`;
+
+                    // Download the file
+                    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    // Show success feedback
+                    const originalText = exportBtn.innerHTML;
+                    exportBtn.innerHTML = '✅ Downloaded!';
+                    exportBtn.style.background = '#38a169';
+                    setTimeout(() => {
+                        exportBtn.innerHTML = originalText;
+                        exportBtn.style.background = 'linear-gradient(135deg, #48bb78 0%, #38a169 100%)';
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('Export failed:', error);
+                    alert('Failed to export results. Please try again.');
+                }
+            };
 
             // Create summary section
             const summaryHTML = `
@@ -949,6 +1028,7 @@
             return highlightedText;
         }
     </script>
+
 </body>
 
 </html>

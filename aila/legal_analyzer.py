@@ -51,7 +51,7 @@ class Summary(BaseModel):
     critical_changes: int = Field(..., ge=0, description="Number of critical changes")
     minor_changes: int = Field(..., ge=0, description="Number of minor changes")
     formatting_changes: int = Field(..., ge=0, description="Number of formatting changes")
-    most_affected_party: str
+    most_affected_party: str | None
     overall_assessment: str
 
     @property

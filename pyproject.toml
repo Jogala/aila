@@ -1,0 +1,172 @@
+[tool.poetry]
+name = "aila"
+version = "1.0.0"
+description = "AI-powered legal document change analyzer with FastAPI backend"
+readme = "README.md"
+authors = ["Joachim Rosenberger <joachim.h.rosenberger@gmail.com>"]
+
+# include the package and all sub packages
+packages = [{ include = "aila" }]
+
+[tool.poetry.dependencies]
+# Core Python
+python = ">=3.12,<3.13"
+
+# Legal Document Analyzer - Essential dependencies
+openai = "^1.0.0"
+anthropic = "^0.62.0"
+PyPDF2 = "^3.0.1"
+python-docx = "^1.1.0"
+click = "^8.1.7"
+pydantic = "^2.6.0"
+python-dotenv = "^1.0.0"
+requests = "^2.31.0"
+tiktoken = "^0.11.0"
+
+[tool.poetry.group.api.dependencies]
+fastapi = "^0.115.0"
+uvicorn = { extras = ["standard"], version = "^0.32.0" }
+python-multipart = "^0.0.6"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.0"
+httpx = "^0.28.0"
+pytest-asyncio = "^0.24.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "*"
+ipython = "*"
+mypy = "*"
+types-requests = "^2.32.4.20250809"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    ".venv",
+    "venv",
+    ".vscode",
+    "scripts_allan",
+    "results",
+    "data",
+    "cache",
+]
+
+line-length = 120
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+# Enable basic error and style checks
+select = ["E4", "E7", "E9", "F", "W"]
+ignore = ["E402"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+# Basic configuration
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+
+# Output configuration
+show_error_codes = true
+show_column_numbers = true
+show_error_context = true
+color_output = true
+error_summary = true
+
+# Import discovery
+mypy_path = "."
+packages = ["aila"]
+namespace_packages = true
+
+# Third-party library stubs
+ignore_missing_imports = false
+
+# Exclude patterns
+exclude = [
+    "^build/",
+    "^dist/",
+    "^.venv/",
+    "^venv/",
+    "^.mypy_cache/",
+    "^__pycache__/",
+    "^tests/",
+    "^scripts/",
+    "^cache/",
+    "^data/",
+    "^results/",
+]
+
+# Per-module options for third-party libraries that may not have stubs
+[[tool.mypy.overrides]]
+module = "anthropic.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "openai.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "PyPDF2.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "docx.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "uvicorn.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "fastapi.*"
+ignore_missing_imports = true
+
+# Pydantic configuration - enable plugin for better model checking
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true

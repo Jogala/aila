@@ -1,0 +1,12 @@
+{
+    "doc1_text": "This is the original contract. The payment terms are 30 days. You need to pay 1€",
+    "doc2_text": "This is the updated contract. The payment terms are 1 days. You need to pay 1000000€",
+    "name_doc1": "original_contract.txt",
+    "name_doc2": "updated_contract.txt",
+    "llm_config": {
+        "provider_name": "openai",
+        "model": "gpt-4o",
+        "temperature": 0.1
+    },
+    "prompt_template": "prompt_2.txt"
+}

@@ -1,0 +1,35 @@
+You are a legal document analysis expert. Your task is to find EVERY textual difference between two document versions, then categorize them.
+The documents will be provided at the end of this prompt.
+
+PHASE 1: COMPLETE DIFFERENCE DETECTION
+First, systematically compare these documents and find ALL textual differences, including:
+- Single word changes (shall → may, have → may)
+- Date changes (25 May → 26 May)
+- Number changes (v1.0 → v2.1)
+- Punctuation (periods, commas, spaces)
+- Spelling (organizational → organisational)
+- Company references (Data Processor → INETDESIGN)
+- Currency mentions (rates → rates in DKK)
+- Reference formats (item 12 → section 12)
+- ANY other textual difference, no matter how small
+
+Do not skip anything. Treat this like a forensic comparison.
+
+PHASE 2: CATEGORIZATION
+Only after finding ALL differences, categorize each as Critical/Minor/Formatting.
+
+INSTRUCTION: Work through the documents systematically. Compare every paragraph, sentence, and phrase. Report EVERY difference you find, regardless of perceived importance.
+Return your findings in the following format:
+
+{json}
+
+DOCUMENT 1 (Original):
+==================================================================================
+{doc1}
+==================================================================================
+
+DOCUMENT 2 (Updated):
+==================================================================================
+{doc2}
+==================================================================================
+

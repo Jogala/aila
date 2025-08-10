@@ -1,0 +1,118 @@
+# Python
+**/__pycache__/
+**/*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+logs/
+**/.ruff_cache/
+
+# Virtual Environments
+.venv/
+.venv
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE and Editor files
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Project specific
+data/**
+cache/
+cache/**
+results/**
+results_/**
+tmp/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing and Quality Tools
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Data files
+**/*.parquet
+**/*.pickle
+**/*.pkl
+**/*.csv
+**/*.json.gz
+
+# LaTeX
+**/*.log
+**/*.synctex.gz
+**/*.fls
+**/*.fdb_latexmk
+**/*.aux
+**/*.bbl
+**/*.blg
+**/*.out
+**/*.toc
+**/*.lof
+**/*.lot
+documentation/documentation.pdf
+
+# Keep important files (override above patterns)
+!.env.example
+!data/.gitkeep
+!results/.gitkeep
+!scripts/.gitkeep
+!tests/.gitkeep

@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Document Change Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .config-info {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #fc8181;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.connected {
+            background: #68d391;
+            animation: none;
+        }
+
+        .status-indicator.checking {
+            background: #f6e05e;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .server-guide {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #f6e05e;
+        }
+
+        .server-guide.error {
+            border-left-color: #fc8181;
+        }
+
+        .server-guide h3 {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+
+        .command-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .copy-btn:hover {
+            background: #2d3748;
+        }
+
+        .sections {
+            display: grid;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        input[type="file"],
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+            margin: 1rem 0;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .results {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .results-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #4a5568;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 0.5rem;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #667eea;
+        }
+
+        .summary-card p {
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .change-item {
+            background: #f7fafc;
+            border-left: 4px solid #667eea;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+        }
+
+        .change-item.critical {
+            border-left-color: #e53e3e;
+            background: #fed7d7;
+        }
+
+        .change-item.minor {
+            border-left-color: #d69e2e;
+            background: #faf089;
+        }
+
+        .change-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .change-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .change-type.critical {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .change-type.minor {
+            background: #d69e2e;
+            color: white;
+        }
+
+        .change-type.formatting {
+            background: #38a169;
+            color: white;
+        }
+
+        .change-details {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .change-text {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .text-block {
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+
+        .old-text {
+            background: #fed7d7;
+            border: 1px solid #fc8181;
+        }
+
+        .new-text {
+            background: #c6f6d5;
+            border: 1px solid #68d391;
+        }
+
+        .confidence-score {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .change-text {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Load configuration first -->
+    <script src="config.js"></script>
+
+    <div class="container">
+        <div class="header">
+            <h1>Legal Document Change Analyzer</h1>
+            <p>AI-powered legal document comparison and analysis</p>
+            <div class="config-info" id="configInfo">
+                API Endpoint: <span id="apiEndpoint">Loading...</span>
+                <div class="server-status">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="serverStatus">Checking server...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Server Status Guide -->
+        <div class="server-guide" id="serverGuide" style="display: none;">
+            <h3>🚀 FastAPI Server Setup Required</h3>
+            <p>The analysis server is not running. Please start the FastAPI server to use the document analyzer.</p>
+
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start:</h4>
+            <div class="command-block">
+                # MAKE SURE YOU ARE ON THE ROOT DIRECTORY OF THE PROJECT, RUN ALL COMMANDS FROM THERE
+            </div>
+
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start:</h4>
+            <div class="command-block">
+                <button class="copy-btn" onclick="copyToClipboard('cd aila && poetry install --with api')">Copy</button>
+                # Install dependencies
+                poetry install --with api
+            </div>
+
+            <div class="command-block">
+                <button class="copy-btn"
+                    onclick="copyToClipboard('python -m uvicorn aila.api.main:app --reload')">Copy</button>
+                # Start the server
+                poetry run uvicorn aila.api.main:app --reload --port 8000
+            </div>
+
+            <p><strong>Alternative:</strong> If you have the server running on a different port, update your
+                <code>.env</code> file and regenerate the config:
+            </p>
+            <div class="command-block">
+                <button class="copy-btn" onclick="copyToClipboard('python generate_config.py')">Copy</button>
+                # Update frontend config
+                python generate_config.py
+            </div>
+
+            <button class="btn" onclick="checkServerStatus()" style="margin-top: 1rem; max-width: 200px;">
+                🔄 Check Again
+            </button>
+        </div>
+
+        <div class="sections">
+            <!-- File Upload Section -->
+            <div class="section">
+                <h2 class="section-title">📄 Upload Documents for Analysis</h2>
+                <form id="fileAnalysisForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="document1">First Document</label>
+                            <input type="file" id="document1" name="document1" accept=".txt,.pdf,.docx" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="document2">Second Document</label>
+                            <input type="file" id="document2" name="document2" accept=".txt,.pdf,.docx" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fileProvider">LLM Provider</label>
+                            <select id="fileProvider" name="provider" required>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="openai">OpenAI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fileModel">Model</label>
+                            <input type="text" id="fileModel" name="model" value="claude-3-5-haiku-20241022" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fileTemperature">Temperature</label>
+                            <input type="number" id="fileTemperature" name="temperature" min="0" max="2" step="0.1"
+                                value="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="filePromptTemplate">Prompt Template</label>
+                            <input type="text" id="filePromptTemplate" name="prompt_template" value="prompt_2.txt"
+                                required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Analyze Documents</button>
+                    <div class="loading" id="fileLoading">🔄 Analyzing documents...</div>
+                    <div class="error" id="fileError"></div>
+                </form>
+            </div>
+
+            <!-- Text Input Section -->
+            <div class="section">
+                <h2 class="section-title">📝 Analyze Text Directly</h2>
+                <form id="textAnalysisForm">
+                    <div class="form-group">
+                        <label for="doc1Text">First Document Text</label>
+                        <textarea id="doc1Text" name="doc1_text" placeholder="Paste your first document text here..."
+                            required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="doc2Text">Second Document Text</label>
+                        <textarea id="doc2Text" name="doc2_text" placeholder="Paste your second document text here..."
+                            required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="doc1Name">First Document Name</label>
+                            <input type="text" id="doc1Name" name="name_doc1" value="document1.txt" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doc2Name">Second Document Name</label>
+                            <input type="text" id="doc2Name" name="name_doc2" value="document2.txt" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="textProvider">LLM Provider</label>
+                            <select id="textProvider" name="provider" required>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="openai">OpenAI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="textModel">Model</label>
+                            <input type="text" id="textModel" name="model" value="claude-3-5-haiku-20241022" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="textTemperature">Temperature</label>
+                            <input type="number" id="textTemperature" name="temperature" min="0" max="2" step="0.1"
+                                value="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="textPromptTemplate">Prompt Template</label>
+                            <input type="text" id="textPromptTemplate" name="prompt_template" value="prompt_1.txt"
+                                required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Analyze Texts</button>
+                    <div class="loading" id="textLoading">🔄 Analyzing texts...</div>
+                    <div class="error" id="textError"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results" id="results">
+            <h2 class="results-title">📊 Analysis Results</h2>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Use configuration from config.js
+        const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8000';
+        let serverConnected = false;
+
+        // Check server status
+        async function checkServerStatus() {
+            const statusIndicator = document.getElementById('statusIndicator');
+            const serverStatus = document.getElementById('serverStatus');
+            const serverGuide = document.getElementById('serverGuide');
+            const sections = document.querySelector('.sections');
+
+            statusIndicator.className = 'status-indicator checking';
+            serverStatus.textContent = 'Checking server...';
+
+            try {
+                // Try to reach the health endpoint or root endpoint
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    method: 'GET',
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
+
+                if (response.ok) {
+                    statusIndicator.className = 'status-indicator connected';
+                    serverStatus.textContent = 'Server connected ✓';
+                    serverGuide.style.display = 'none';
+                    sections.style.display = 'grid';
+                    serverConnected = true;
+                } else {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+            } catch (error) {
+                statusIndicator.className = 'status-indicator';
+                serverStatus.textContent = 'Server not available ✗';
+                serverGuide.style.display = 'block';
+                sections.style.display = 'none';
+                serverConnected = false;
+
+                // Update guide with specific error if helpful
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    serverGuide.querySelector('p').textContent =
+                        'Cannot connect to the FastAPI server. Please make sure it is running and accessible.';
+                } else if (error.message.includes('timeout')) {
+                    serverGuide.querySelector('p').textContent =
+                        'Server connection timed out. The server might be starting up or overloaded.';
+                }
+            }
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Could add a toast notification here
+                console.log('Copied to clipboard:', text);
+            });
+        }
+
+        // Update the config display and check server
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('apiEndpoint').textContent = API_BASE_URL;
+
+            // Also update form defaults from config if available
+            if (window.APP_CONFIG) {
+                const defaultModel = window.APP_CONFIG.DEFAULT_MODEL;
+                const defaultTemp = window.APP_CONFIG.DEFAULT_TEMPERATURE;
+
+                if (defaultModel) {
+                    document.getElementById('fileModel').value = defaultModel;
+                    document.getElementById('textModel').value = defaultModel;
+                }
+
+                if (defaultTemp !== undefined) {
+                    document.getElementById('fileTemperature').value = defaultTemp;
+                    document.getElementById('textTemperature').value = defaultTemp;
+                }
+            }
+
+            // Check server status on page load
+            checkServerStatus();
+        });
+
+        // Enhanced error handling for API calls
+        async function makeApiCall(url, options = {}) {
+            if (!serverConnected) {
+                throw new Error('Server not connected. Please start the FastAPI server first.');
+            }
+
+            try {
+                const response = await fetch(url, {
+                    ...options,
+                    signal: AbortSignal.timeout(30000) // 30 second timeout for analysis
+                });
+
+                if (!response.ok) {
+                    if (response.status === 0 || response.status >= 500) {
+                        // Server might have gone down
+                        serverConnected = false;
+                        checkServerStatus();
+                    }
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return response;
+            } catch (error) {
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    serverConnected = false;
+                    checkServerStatus();
+                    throw new Error('Lost connection to server. Please check if the FastAPI server is still running.');
+                }
+                throw error;
+            }
+        }
+
+        // Handle file upload form
+        document.getElementById('fileAnalysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const loading = document.getElementById('fileLoading');
+            const error = document.getElementById('fileError');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            // Show loading state
+            loading.classList.add('show');
+            error.classList.remove('show');
+            submitBtn.disabled = true;
+
+            try {
+                // Clear any previous text analysis data
+                window.lastAnalyzedTexts = null;
+
+                // Create URL with query parameters for non-file data
+                const url = new URL(`${API_BASE_URL}/analyze`);
+                url.searchParams.append('provider_name', formData.get('provider'));
+                url.searchParams.append('model', formData.get('model'));
+                url.searchParams.append('temperature', formData.get('temperature'));
+                url.searchParams.append('prompt_template', formData.get('prompt_template'));
+
+                // Create form data for files only
+                const apiFormData = new FormData();
+                apiFormData.append('document1', formData.get('document1'));
+                apiFormData.append('document2', formData.get('document2'));
+
+                const response = await makeApiCall(url.toString(), {
+                    method: 'POST',
+                    body: apiFormData
+                });
+
+                const result = await response.json();
+
+                // Store the document texts from the API response for highlighting
+                if (result.document1_text && result.document2_text) {
+                    window.lastAnalyzedTexts = {
+                        doc1_text: result.document1_text,
+                        doc2_text: result.document2_text
+                    };
+                }
+
+                displayResults(result);
+
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Handle text analysis form
+        document.getElementById('textAnalysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const loading = document.getElementById('textLoading');
+            const error = document.getElementById('textError');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            // Show loading state
+            loading.classList.add('show');
+            error.classList.remove('show');
+            submitBtn.disabled = true;
+
+            try {
+                const requestBody = {
+                    doc1_text: formData.get('doc1_text'),
+                    doc2_text: formData.get('doc2_text'),
+                    name_doc1: formData.get('name_doc1'),
+                    name_doc2: formData.get('name_doc2'),
+                    llm_config: {
+                        provider_name: formData.get('provider'),
+                        model: formData.get('model'),
+                        temperature: parseFloat(formData.get('temperature'))
+                    },
+                    prompt_template: formData.get('prompt_template')
+                };
+
+                // Store the original texts for document comparison
+                window.lastAnalyzedTexts = {
+                    doc1_text: requestBody.doc1_text,
+                    doc2_text: requestBody.doc2_text
+                };
+
+                const response = await makeApiCall(`${API_BASE_URL}/analyze-texts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                const result = await response.json();
+                displayResults(result);
+
+            } catch (err) {
+                error.textContent = `Error: ${err.message}`;
+                error.classList.add('show');
+            } finally {
+                loading.classList.remove('show');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function displayResults(result) {
+            const resultsDiv = document.getElementById('results');
+            const contentDiv = document.getElementById('resultsContent');
+
+            // Create summary section
+            const summaryHTML = `
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h3>${result.summary.critical_changes}</h3>
+                        <p>Critical Changes</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${result.summary.minor_changes}</h3>
+                        <p>Minor Changes</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3>${result.summary.formatting_changes}</h3>
+                        <p>Formatting Changes</p>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1rem;">Analysis Summary</h3>
+                    <p style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <strong>Most Affected Party:</strong> ${result.summary.most_affected_party}
+                    </p>
+                    <p style="background: #f7fafc; padding: 1rem; border-radius: 8px;">
+                        <strong>Overall Assessment:</strong> ${result.summary.overall_assessment}
+                    </p>
+                </div>
+            `;
+
+            // Create changes section
+            const changesHTML = result.changes.map(change => `
+                <div class="change-item ${change.change_type.toLowerCase()}">
+                    <div class="change-header">
+                        <span class="change-type ${change.change_type.toLowerCase()}">${change.change_type}</span>
+                        <span class="confidence-score">Confidence: ${(change.confidence_score * 100).toFixed(1)}%</span>
+                    </div>
+                    
+                    <div class="change-details">
+                        <div>
+                            <h4 style="margin-bottom: 0.5rem;">Description</h4>
+                            <p style="margin-bottom: 1rem;">${change.description}</p>
+                        </div>
+                        
+                        ${change.old_text && change.new_text ? `
+                        <div class="change-text">
+                            <div>
+                                <h5 style="margin-bottom: 0.5rem;">Old Text</h5>
+                                <div class="text-block old-text">${change.old_text}</div>
+                            </div>
+                            <div>
+                                <h5 style="margin-bottom: 0.5rem;">New Text</h5>
+                                <div class="text-block new-text">${change.new_text}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        ${change.section ? `
+                        <div>
+                            <strong>Section:</strong> ${change.section}
+                        </div>
+                        ` : ''}
+                        
+                        ${change.legal_implications ? `
+                        <div>
+                            <strong>Legal Implications:</strong> ${change.legal_implications}
+                        </div>
+                        ` : ''}
+                        
+                        ${change.affected_parties && change.affected_parties.length > 0 ? `
+                        <div>
+                            <strong>Affected Parties:</strong> ${change.affected_parties.join(', ')}
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            contentDiv.innerHTML = summaryHTML + `
+                <h3 style="margin-bottom: 1rem;">Detailed Changes</h3>
+                ${changesHTML}
+                
+                <div id="documentComparison" style="margin-top: 3rem;">
+                    <h3 style="margin-bottom: 1rem;">📄 Full Document Comparison</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                        <div>
+                            <h4 style="margin-bottom: 1rem; color: #4a5568;">${result.document1_name}</h4>
+                            <div id="doc1FullText" style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; font-family: monospace; font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; max-height: 500px; overflow-y: auto;"></div>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 1rem; color: #4a5568;">${result.document2_name}</h4>
+                            <div id="doc2FullText" style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; font-family: monospace; font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; max-height: 500px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 2rem; padding: 1rem; background: #f7fafc; border-radius: 8px;">
+                    <small style="color: #4a5568;">
+                        <strong>Analysis completed:</strong> ${result.analysis_timestamp}<br>
+                        <strong>Documents:</strong> ${result.document1_name} vs ${result.document2_name}<br>
+                        <strong>LLM:</strong> ${result.llm_config.provider_name} - ${result.llm_config.model}
+                    </small>
+                </div>
+            `;
+
+            // Populate the full document texts with highlighted changes
+            populateDocumentComparison(result);
+
+            resultsDiv.classList.add('show');
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function populateDocumentComparison(result) {
+            const doc1Container = document.getElementById('doc1FullText');
+            const doc2Container = document.getElementById('doc2FullText');
+
+            if (window.lastAnalyzedTexts) {
+                // We have the document texts - show them with highlighted changes
+                const { doc1_text, doc2_text } = window.lastAnalyzedTexts;
+
+                doc1Container.innerHTML = highlightChangesInText(doc1_text, result.changes, 'old');
+                doc2Container.innerHTML = highlightChangesInText(doc2_text, result.changes, 'new');
+            } else {
+                // No texts available
+                doc1Container.innerHTML = `<div style="color: #666; font-style: italic; text-align: center; padding: 2rem;">
+                    📄 Document text not available<br>
+                    <small>(This shouldn't happen - check API response)</small>
+                </div>`;
+                doc2Container.innerHTML = `<div style="color: #666; font-style: italic; text-align: center; padding: 2rem;">
+                    📄 Document text not available<br>
+                    <small>(This shouldn't happen - check API response)</small>
+                </div>`;
+            }
+        }
+
+        function highlightChangesInText(text, changes, type) {
+            let highlightedText = text;
+
+            // Sort changes by position (if we had position info) or by length (longest first)
+            const sortedChanges = changes
+                .filter(change => change.old_text && change.new_text)
+                .sort((a, b) => (b.old_text?.length || 0) - (a.old_text?.length || 0));
+
+            for (const change of sortedChanges) {
+                const searchText = type === 'old' ? change.old_text : change.new_text;
+                const changeClass = change.change_type.toLowerCase();
+
+                if (searchText && highlightedText.includes(searchText)) {
+                    const highlightColor = changeClass === 'critical' ? '#fed7d7' :
+                        changeClass === 'minor' ? '#faf089' : '#e6fffa';
+                    const borderColor = changeClass === 'critical' ? '#fc8181' :
+                        changeClass === 'minor' ? '#f6e05e' : '#81e6d9';
+
+                    highlightedText = highlightedText.replace(
+                        searchText,
+                        `<span style="background: ${highlightColor}; border: 1px solid ${borderColor}; padding: 2px 4px; border-radius: 3px; font-weight: 600;">${searchText}</span>`
+                    );
+                }
+            }
+
+            return highlightedText;
+        }
+    </script>
+</body>
+
+</html>

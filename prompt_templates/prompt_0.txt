@@ -1,0 +1,25 @@
+You are a legal document analysis expert. Analyze the changes between two versions of a legal document and categorize each change.
+
+DOCUMENT 1 (Original):
+{doc1}
+
+DOCUMENT 2 (Updated):
+{doc2}
+
+STEP 1: First, identify the key parties/entities mentioned in these documents (e.g., "Buyer", "Seller", "Licensor", "Licensee", "Data Controller", "Data Processor", "Company", "Client", etc.)
+
+STEP 2: Provide your analysis in this EXACT JSON format:
+
+{json_format}
+
+CATEGORIZATION GUIDELINES:
+- Critical: Changes that materially affect rights, obligations, or legal interpretation
+- Minor: Clarifications, wording improvements, administrative updates
+- Formatting: Punctuation, capitalization, spacing, or other cosmetic changes
+
+SEVERITY GUIDELINES:
+- high: Major legal/financial impact, changes fundamental obligations
+- medium: Moderate impact, affects compliance or operations  
+- low: Minimal impact, administrative or cosmetic
+
+Focus on legal significance, not just textual differences. Identify ALL meaningful changes between the documents.

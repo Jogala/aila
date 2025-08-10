@@ -1,6 +1,6 @@
-# AILA
+# Aila - AI Legal Assistant
 
-AI-powered legal advisor that detects changes in legal documents using Anthropic or OpenAI APIs.
+Aila detects changes in legal documents using Anthropic or OpenAI APIs.
 
 ## Quick Start
 

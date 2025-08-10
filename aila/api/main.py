@@ -56,7 +56,7 @@ ALLOWED_EXTENSIONS = {"txt", "pdf", "docx"}
 
 # Create FastAPI app
 app = FastAPI(
-    title="Legal Document Change Analyzer",
+    title="AILA - AI Legal Assistant - Frontend",
     description="AI-powered legal document comparison and analysis",
     version="1.0.0",
     docs_url="/docs",
@@ -82,7 +82,7 @@ def allowed_file(filename: str) -> bool:
 async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
-        "message": "Legal Document Change Analyzer API",
+        "message": "AI Legal Assistant API",
         "documentation": "/docs",
         "health": "/health",
         "version": "1.0.0",
@@ -92,7 +92,7 @@ async def root() -> dict[str, str]:
 @app.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
-    return HealthResponse(status="healthy", service="Legal Document Change Analyzer", version="1.0.0")
+    return HealthResponse(status="healthy", service="AI Legal Assistant", version="1.0.0")
 
 
 @app.get("/debug/config")
@@ -253,5 +253,5 @@ if __name__ == "__main__":
     import uvicorn
 
     port = int(os.getenv("PORT", 8000))
-    logger.info(f"Starting Legal Document Analyzer on port {port}")
+    logger.info(f"Starting Aila on port {port}")
     uvicorn.run("api.main:app", host="0.0.0.0", port=port, reload=True, log_level="info")

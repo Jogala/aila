@@ -1,5 +1,5 @@
 """
-Legal Document Change Analyzer - Core Analysis Engine
+AILA - AI (powered) Legal Analyzer - Core Analysis Engine
 
 This module provides AI-powered analysis of legal document changes using modern LLMs.
 It uses a pure functional approach with provider configuration for clean separation of concerns.

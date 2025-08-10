@@ -44,6 +44,10 @@ curl -X POST "http://localhost:8000/analyze?provider_name=anthropic&model=claude
   -F "document2=@doc2.pdf"
 ```
 
+### Web Interface
+![Screen Recording](documentation/ui_demo.gif)
+
+
 ## Requirements
 
 - Python 3.12+

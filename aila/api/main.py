@@ -25,7 +25,22 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # load .env file of root directory
-load_dotenv(Path(__file__).parent.parent / ".env")
+path_env_file = Path(__file__).parent.parent.parent / ".env"
+print(f"Loading environment variables from {path_env_file}")
+
+if not path_env_file.exists():
+    msg = f".env file not found at {path_env_file}. Please create it with your API keys."
+    raise FileNotFoundError(msg)
+
+load_dotenv(path_env_file)
+
+open_ai_key = os.getenv("AILA_OPENAI_API_KEY")
+anthropic_key = os.getenv("AILA_ANTHROPIC_API_KEY")
+
+if not open_ai_key and not anthropic_key:
+    raise ValueError(
+        f"No API keys found. Please set OPENAI_API_KEY or ANTHROPIC_API_KEY in .env file.\n Env variables were read from {path_env_file}"
+    )
 
 
 class AnalysisResultWithTexts(AnalysisResult):

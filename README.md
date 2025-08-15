@@ -18,11 +18,16 @@ cp .env.example .env
 chmod +x init.sh
 ./setup.sh
 
-# Start API server (FROM PROJECT ROOT!)
+# Start core API server (FROM PROJECT ROOT!)
 python -m uvicorn aila.api.main:app --reload
+
+# OR start frontend with API wrapper (includes web interface)
+uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Open http://localhost:8000 for web interface or http://localhost:8000/docs for API docs.
+**Frontend with Web Interface:** Use `uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload` then open http://localhost:8000 for the web interface or http://localhost:8000/api/docs for API docs.
+
+**Core API Only:** Use `python -m uvicorn aila.api.main:app --reload` then open http://localhost:8000/docs for API docs only.
 
 ## Usage
 
@@ -96,10 +101,13 @@ For production, consider:
 
 ### Frontend
 
-The frontend is a static HTML file (`frontend/aila.html`) that doesn't need containerization. You can:
-- Serve it directly with any web server
-- Host it on a CDN or static hosting service
-- Include it in your nginx configuration
+The frontend includes:
+- **Static files:** HTML, CSS, JS in `frontend/static/` directory
+- **FastAPI wrapper:** `frontend/main.py` that serves both frontend and API
+
+**Development:** Use `uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload`
+
+**Production:** The Procfile is already configured for Heroku deployment with the frontend wrapper.
 
 ## Development
 

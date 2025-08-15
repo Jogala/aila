@@ -62,11 +62,11 @@ window.APP_CONFIG = {{
 console.log('Frontend config loaded:', window.APP_CONFIG);
 """
 
-    # Write to frontend directory
-    frontend_dir = Path("frontend")
-    frontend_dir.mkdir(exist_ok=True)
+    # Write to frontend/static directory for deployment setup
+    static_dir = Path("frontend") / "static"
+    static_dir.mkdir(exist_ok=True)
 
-    config_path = frontend_dir / "config.js"
+    config_path = static_dir / "config.js"
     with open(config_path, "w") as f:
         f.write(config_content)
 

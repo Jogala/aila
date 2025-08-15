@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Document Change Analyzer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <!-- Load configuration first -->
+    <script src="/static/config.js"></script>
+
+    <div class="container">
+        <div class="header">
+            <h1>Aila - Your AI Legal Assistant</h1>
+            <p>AI-powered legal document comparison and analysis</p>
+            <div class="config-info" id="configInfo">
+                API Endpoint: <span id="apiEndpoint">Loading...</span>
+                <div class="server-status">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="serverStatus">Checking server...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Server Status Guide -->
+        <div class="server-guide" id="serverGuide" style="display: none;">
+            <h3>🚀 FastAPI Server Setup Required</h3>
+            <p>The analysis server is not running. Please start the FastAPI server to use the document analyzer.</p>
+
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start:</h4>
+            <div class="command-block">
+                # MAKE SURE YOU ARE ON THE ROOT DIRECTORY OF THE PROJECT, RUN ALL COMMANDS FROM THERE
+            </div>
+
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start:</h4>
+            <div class="command-block">
+                <button class="copy-btn" onclick="copyToClipboard('cd aila && poetry install --with api')">Copy</button>
+                # Install dependencies
+                poetry install --with api
+            </div>
+
+            <div class="command-block">
+                <button class="copy-btn"
+                    onclick="copyToClipboard('python -m uvicorn aila.api.main:app --reload')">Copy</button>
+                # Start the server
+                poetry run uvicorn aila.api.main:app --reload --port 8000
+            </div>
+
+            <p><strong>Alternative:</strong> If you have the server running on a different port, update your
+                <code>.env</code> file and regenerate the config:
+            </p>
+            <div class="command-block">
+                <button class="copy-btn" onclick="copyToClipboard('python generate_config.py')">Copy</button>
+                # Update frontend config
+                python generate_config.py
+            </div>
+
+            <button class="btn" onclick="checkServerStatus()" style="margin-top: 1rem; max-width: 200px;">
+                🔄 Check Again
+            </button>
+        </div>
+
+        <div class="sections">
+            <!-- File Upload Section -->
+            <div class="section">
+                <h2 class="section-title">📄 Upload Documents for Analysis</h2>
+                <form id="fileAnalysisForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="document1">First Document</label>
+                            <input type="file" id="document1" name="document1" accept=".txt,.pdf,.docx" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="document2">Second Document</label>
+                            <input type="file" id="document2" name="document2" accept=".txt,.pdf,.docx" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fileProvider">LLM Provider</label>
+                            <select id="fileProvider" name="provider" required>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="openai">OpenAI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fileModel">Model</label>
+                            <input type="text" id="fileModel" name="model" value="claude-3-5-haiku-20241022" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fileTemperature">Temperature</label>
+                            <input type="number" id="fileTemperature" name="temperature" min="0" max="2" step="0.1"
+                                value="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="filePromptTemplate">Prompt Template</label>
+                            <input type="text" id="filePromptTemplate" name="prompt_template" value="prompt_2.txt"
+                                required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Analyze Documents</button>
+                    <div class="loading" id="fileLoading">🔄 Analyzing documents...</div>
+                    <div class="error" id="fileError"></div>
+                </form>
+            </div>
+
+            <!-- Text Input Section -->
+            <div class="section">
+                <h2 class="section-title">📝 Analyze Text Directly</h2>
+                <form id="textAnalysisForm">
+                    <div class="form-group">
+                        <label for="doc1Text">First Document Text</label>
+                        <textarea id="doc1Text" name="doc1_text" placeholder="Paste your first document text here..."
+                            required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="doc2Text">Second Document Text</label>
+                        <textarea id="doc2Text" name="doc2_text" placeholder="Paste your second document text here..."
+                            required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="doc1Name">First Document Name</label>
+                            <input type="text" id="doc1Name" name="name_doc1" value="document1.txt" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="doc2Name">Second Document Name</label>
+                            <input type="text" id="doc2Name" name="name_doc2" value="document2.txt" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="textProvider">LLM Provider</label>
+                            <select id="textProvider" name="provider" required>
+                                <option value="anthropic">Anthropic</option>
+                                <option value="openai">OpenAI</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="textModel">Model</label>
+                            <input type="text" id="textModel" name="model" value="claude-3-5-haiku-20241022" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="textTemperature">Temperature</label>
+                            <input type="number" id="textTemperature" name="temperature" min="0" max="2" step="0.1"
+                                value="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="textPromptTemplate">Prompt Template</label>
+                            <input type="text" id="textPromptTemplate" name="prompt_template" value="prompt_2.txt"
+                                required>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Analyze Texts</button>
+                    <div class="loading" id="textLoading">🔄 Analyzing texts...</div>
+                    <div class="error" id="textError"></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results" id="results">
+            <div class="results-header">
+                <h2 class="results-title">📊 Analysis Results</h2>
+                <button id="exportResultsBtn" class="export-btn" style="display: none;">
+                    📥 Export JSON
+                </button>
+            </div>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script src="/static/scripts.js"></script>
+</body>
+
+</html>

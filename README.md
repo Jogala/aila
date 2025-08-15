@@ -54,6 +54,53 @@ curl -X POST "http://localhost:8000/analyze?provider_name=anthropic&model=claude
 - Poetry
 - API key from Anthropic or OpenAI
 
+## Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# 1. Make sure you have your .env file with API keys
+cp .env.example .env
+# Edit .env with your API keys
+
+# 2. Build and run with docker compose
+docker compose up --build -d
+
+# Alternative: Build and run with docker directly
+docker build -t aila-api .
+docker run -d -p 8000:8000 --name aila-api --env-file .env aila-api
+
+# Verify it's running
+curl http://localhost:8000/health
+
+# Container management
+docker ps                              # View running containers
+docker compose logs                    # View logs (compose)
+docker compose down                    # Stop and remove containers
+docker compose up -d                   # Start containers
+# Or for direct docker containers:
+# docker logs aila-api                 # View logs
+# docker stop aila-api                 # Stop container
+# docker start aila-api                # Start container
+```
+
+The API will be available at http://localhost:8000
+
+### Production Deployment
+
+For production, consider:
+- Using environment variables instead of .env file
+- Adding a reverse proxy (nginx example included in docker-compose.yml)
+- Setting up SSL certificates
+- Using a proper database for logs/results
+
+### Frontend
+
+The frontend is a static HTML file (`frontend/aila.html`) that doesn't need containerization. You can:
+- Serve it directly with any web server
+- Host it on a CDN or static hosting service
+- Include it in your nginx configuration
+
 ## Development
 
 ```bash

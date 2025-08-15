@@ -1,6 +1,7 @@
 from enum import StrEnum
 from typing import List
 
+import tiktoken
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -117,3 +118,26 @@ def get_model_properties(provider_name: ProviderName, model: str) -> LlmModelPro
         f"Model '{model}' not found for provider '{provider_name}'. "
         f"Available models: {[f'{m.provider_name}/{m.model}' for m in LLM_MODELS]}"
     )
+
+
+def count_tokens(text: str, model: str) -> int:
+    """Count tokens in text for the given model."""
+    if model.startswith("claude"):
+        # For Claude models, use GPT-4 tokenizer as approximation
+        # This is a reasonable approximation since both use similar tokenization approaches
+        try:
+            enc = tiktoken.get_encoding("cl100k_base")  # GPT-4 encoding
+            token_count = len(enc.encode(text))
+            return token_count
+        except Exception as e:
+            # Fallback to character-based estimation
+            estimated_tokens = len(text) // 4  # Rough estimate: 4 chars per token
+            return estimated_tokens
+    else:
+        try:
+            enc = tiktoken.encoding_for_model(model)
+            return len(enc.encode(text))
+        except Exception as e:
+            # Fallback to character-based estimation
+            estimated_tokens = len(text) // 4  # Rough estimate: 4 chars per token
+            return estimated_tokens

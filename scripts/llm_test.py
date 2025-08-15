@@ -24,15 +24,15 @@ doc1_path = Path("data/1.pdf")
 doc2_path = Path("data/2.pdf")
 doc1 = load_document(doc1_path)
 doc2 = load_document(doc2_path)
-tokens_doc1 = llm_interface.count_tokens(doc1, llm_config.model)
-tokens_doc2 = llm_interface.count_tokens(doc2, llm_config.model)
+tokens_doc1 = llm_models.count_tokens(doc1, llm_config.model)
+tokens_doc2 = llm_models.count_tokens(doc2, llm_config.model)
 print(f"Tokens in Document 1: {tokens_doc1}")
 print(f"Tokens in Document 2: {tokens_doc2}")
 
 name_prompt_template = "prompt_2.txt"
 prompt = la.create_analysis_prompt(doc1, doc2, name_prompt_template)
 
-tokens_prompt = llm_interface.count_tokens(prompt, llm_config.model)
+tokens_prompt = llm_models.count_tokens(prompt, llm_config.model)
 print(f"Tokens in Prompt: {tokens_prompt}")
 
 provider_config = llm_interface.init_llm_interface(llm_config)

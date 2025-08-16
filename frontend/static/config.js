@@ -8,8 +8,8 @@ window.APP_CONFIG = {
     DEFAULT_TEMPERATURE: 0.1,
     
     // Environment info
-    ENVIRONMENT: 'development',
-    GENERATED_AT: '2025-08-10T10:52:37.480009'
+    ENVIRONMENT: 'production',
+    GENERATED_AT: '2025-08-16T15:30:00.000000'
 };
 
 console.log('Frontend config loaded:', window.APP_CONFIG);

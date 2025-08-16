@@ -1,0 +1,3 @@
+# comment this line if you want railways to autodetect the Dockerfile and build and Deploy using Docker
+# if no commented out, railways will install dependencies via pyproject.toml and run the app via the settings in the Procfile
+Dockerfile

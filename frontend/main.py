@@ -8,8 +8,8 @@ import sys
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 
 # Add the parent directory to the Python path so we can import aila
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -21,7 +21,7 @@ from aila.api.main import app as api_app
 app: FastAPI = FastAPI(
     title="AILA - AI Legal Assistant",
     description="AI-powered legal document comparison and analysis with web interface",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Get the current directory (frontend)
@@ -35,22 +35,27 @@ app.mount("/api", api_app)
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
-@app.get("/")
-async def serve_frontend() -> FileResponse | dict[str, str]:
-    """Serve the main HTML frontend at the root path."""
+
+@app.get("/", response_model=None)
+async def serve_frontend() -> Response:
     html_path = static_dir / "index.html"
     if html_path.exists():
         return FileResponse(str(html_path))
-    else:
-        return {"error": "Frontend not found. Please ensure static/index.html exists."}
+    return JSONResponse(
+        {"error": "Frontend not found. Please ensure static/index.html exists."},
+        status_code=404,
+    )
+
 
 @app.get("/health")
 async def health_check() -> dict[str, str]:
     """Health check for the main app."""
     return {"status": "healthy", "service": "AILA Full Stack", "version": "1.0.0"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     port: int = int(os.getenv("PORT", 8000))
     print(f"Starting AILA Full Stack on port {port}")
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

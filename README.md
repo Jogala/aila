@@ -1,6 +1,11 @@
-# Aila - AI Legal Assistant
+# Aila - AI Legal Assistant (Demo)
 
 Aila detects changes in legal documents using Anthropic or OpenAI APIs.
+
+**Demo only. Not legal advice.** 
+No attorney–client relationship. 
+Outputs may be incorrect.  
+**Do not use for real cases or confidential data.**
 
 ## Quick Start
 
@@ -120,3 +125,7 @@ ruff format .
 # Tests
 pytest
 ```
+
+## License & Notices
+- License: MIT (or Apache-2.0).  
+- Not affiliated with any law firm or provider. Trademarks belong to their owners. Use of LLM APIs is subject to their terms.

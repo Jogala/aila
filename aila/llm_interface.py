@@ -9,6 +9,7 @@ from aila.config import get_config
 from aila.llm_models import LlmConfig, ProviderName, get_model_properties
 
 
+# Protocol instead of AnalyzeFn = Callable[[str], str], s.t. IDE knows argument names when calling function
 class AnalyzeFn(Protocol):
     def __call__(self, prompt: str) -> str: ...
 
@@ -21,6 +22,10 @@ class LlmInterface(pydantic.BaseModel):
         arbitrary_types_allowed=True,
         frozen=True,
     )
+
+    # Convenience only — preserves Context Object; no new state, to fit OOP team style
+    def analyze(self, prompt: str) -> str:
+        return self.analyze_fn(prompt)
 
 
 def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:

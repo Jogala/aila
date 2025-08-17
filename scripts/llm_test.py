@@ -18,7 +18,7 @@ llm_config = llm_models.LlmConfig(
     temperature=0.1,
 )
 
-llm_inter = llm_interface.init_llm_interface(llm_config)
+llm_inter = llm_interface.get_llm_interface(llm_config)
 
 doc1_path = Path("data/1.pdf")
 doc2_path = Path("data/2.pdf")
@@ -35,7 +35,7 @@ prompt = la.create_analysis_prompt(doc1, doc2, name_prompt_template)
 tokens_prompt = llm_models.count_tokens(prompt, llm_config.model)
 print(f"Tokens in Prompt: {tokens_prompt}")
 
-provider_config = llm_interface.init_llm_interface(llm_config)
+provider_config = llm_interface.get_llm_interface(llm_config)
 doc1_text = load_document(doc1_path)
 doc2_text = load_document(doc2_path)
 

@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from aila.legal_analyzer import AnalysisResult, analyze_documents
-from aila.llm_interface import init_llm_interface
+from aila.llm_interface import get_llm_interface
 from aila.llm_models import LlmConfig, ProviderName
 from aila.load_document import load_document
 
@@ -181,7 +181,7 @@ async def analyze_documents_endpoint(
             llm_config = LlmConfig(provider_name=provider_name, model=model, temperature=temperature)
 
             # Perform analysis
-            llm_interface = init_llm_interface(llm_config)
+            llm_interface = get_llm_interface(llm_config)
 
             result = analyze_documents(
                 llm_interface=llm_interface,
@@ -224,7 +224,7 @@ async def analyze_texts_endpoint(request: AnalyzeTextsRequest) -> AnalysisResult
         logger.info(f"Starting text analysis: {request.name_doc1} vs {request.name_doc2}")
 
         # Perform analysis
-        llm_interface = init_llm_interface(request.llm_config)
+        llm_interface = get_llm_interface(request.llm_config)
 
         result = analyze_documents(
             llm_interface=llm_interface,

@@ -22,7 +22,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-def generate_frontend_config():
+def generate_frontend_config() -> None:
     # Verify we're in the project root
     if not Path(".env").exists():
         print("❌ Error: .env file not found!")

@@ -81,10 +81,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
-# MyPy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Pyright
+.pyright/
 
 # Ruff
 .ruff_cache/

@@ -118,7 +118,7 @@ The frontend includes:
 
 ```bash
 # Quality checks
-mypy aila/
+pyright
 ruff check .
 ruff format .
 

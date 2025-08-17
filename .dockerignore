@@ -84,10 +84,8 @@ data/
 # Jupyter
 .ipynb_checkpoints
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# pyright
+.pyright/
 
 # Temporary files
 *.tmp

@@ -3,7 +3,6 @@
         // Core Python Development
         "ms-python.python",
         "ms-python.vscode-pylance",
-        "ms-python.mypy-type-checker",
         "ms-python.poetry",
         "charliermarsh.ruff",
         // Jupyter Notebook Support

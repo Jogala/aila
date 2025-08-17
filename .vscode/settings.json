@@ -1,0 +1,54 @@
+{
+    "editor.formatOnSave": true,
+    "notebook.formatOnSave.enabled": true,
+    "notebook.codeActionsOnSave": {
+        "source.organizeImports": "explicit"
+    },
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    "ruff.nativeServer": true,
+    // "ruff.lint.args": [
+    //     "--config=./pyproject.toml"
+    // ],
+    "jupyter.notebookFileRoot": "${workspaceFolder}",
+    "files.associations": {
+        "*.log": "log"
+    },
+    "python.analysis.typeCheckingMode": "strict",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingTypeArgument": "error",
+        "reportMissingReturnType": "error",
+        "reportMissingImports": "none",
+        "reportMissingModuleSource": "none",
+        "reportIndexIssue": "none",
+        // Add other Pylance diagnostics you want to disable here
+    },
+    "python.analysis.exclude": [
+        "scripts_allan",
+        "data",
+        "cache",
+        "results",
+        "results_",
+        ".venv",
+        "**/__pycache__",
+        "**/.vscode-server/**", //1
+        "**/ipykernel_*/**" //1  
+    ],
+    "github.copilot.enable": {
+        "markdown": true
+    },
+    "markdown.preview.fontSize": 30,
+    //1
+    "search.exclude": {
+        "**/ipykernel_*/**": true,
+        "**/.vscode-server/**": true
+    },
+    "files.exclude": {
+        "**/ipykernel_*/**": true
+    }
+}
+//1) try settings for vs code not opening additional tabs when renaming a variable working with ipython notebook

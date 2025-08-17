@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "justMyCode": false,
+    "configurations": [
+        {
+            "justMyCode": false,
+            "name": "Python: Aktuelle Datei",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PYDEVD_WARN_EVALUATION_TIMEOUT": "10000"
+            },
+            // make sure that local virtual env is used
+            "pythonPath": "${workspaceFolder}/.venv/bin/python",
+        }
+    ]
+}

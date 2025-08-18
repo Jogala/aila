@@ -9,42 +9,24 @@ from aila.config import get_config
 from aila.llm_models import LlmConfig, ProviderName, get_model_properties
 
 
-# Protocol instead of AnalyzeFn = Callable[[str], str], s.t. IDE knows argument names when calling function
-class AnalyzeFn(Protocol):
-    def __call__(self, prompt: str) -> str: ...
-
-
-# Functional Strategy with an Immutable Configuration Object
-# Like this no inheritance is needed
-class LlmInterface(pydantic.BaseModel):
+# duck typing instead of coupling through abstract class
+class LlmInterface(Protocol):
     llm_config: LlmConfig
-    analyze_fn: AnalyzeFn
+
+    def analyze(self, prompt: str) -> str: ...
+
+
+class LlmInterfaceOpenAi(pydantic.BaseModel):
+    llm_config: LlmConfig
 
     model_config = pydantic.ConfigDict(
         arbitrary_types_allowed=True,
         frozen=True,
     )
 
-    # Convenience only
     def analyze(self, prompt: str) -> str:
-        return self.analyze_fn(prompt)
-
-
-# very simple to create even LLM Interfaces that are not only provider specific, but also model specifc!
-def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:
-    if llm_config.provider_name == ProviderName.OPENAI:
-        analyzer = _build_openai_analyzer(llm_config)
-    elif llm_config.provider_name == ProviderName.ANTHROPIC:
-        analyzer = _build_anthropic_analyzer(llm_config)
-    else:
-        raise ValueError(f"Unknown provider: {llm_config.provider_name}")
-    return LlmInterface(analyze_fn=analyzer, llm_config=llm_config)
-
-
-def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
-    def analyze(prompt: str) -> str:
         client = _get_openai_client(api_key=get_config().openai_api_key)
-        llm_properties = get_model_properties(ProviderName.OPENAI, llm_config.model)
+        llm_properties = get_model_properties(ProviderName.OPENAI, self.llm_config.model)
 
         messages = [
             {
@@ -55,16 +37,16 @@ def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
         ]
         temperature = 0.1
 
-        if llm_config.model == "gpt-5":
+        if self.llm_config.model == "gpt-5":
             response = client.chat.completions.create(
-                model=llm_config.model,
+                model=self.llm_config.model,
                 messages=messages,  # type: ignore
                 temperature=1,
                 max_completion_tokens=llm_properties.output_token_max,
             )
         else:
             response = client.chat.completions.create(
-                model=llm_config.model,
+                model=self.llm_config.model,
                 messages=messages,  # type: ignore
                 temperature=temperature,
                 max_tokens=llm_properties.output_token_max,
@@ -73,15 +55,20 @@ def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
         content = response.choices[0].message.content
         return content if content is not None else ""
 
-    return analyze
 
+class LlmInterfaceAnthropic(pydantic.BaseModel):
+    llm_config: LlmConfig
 
-def _build_anthropic_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
-    def analyze(prompt: str) -> str:
+    model_config = pydantic.ConfigDict(
+        arbitrary_types_allowed=True,
+        frozen=True,
+    )
+
+    def analyze(self, prompt: str) -> str:
         client = _get_anthropic_client(api_key=get_config().anthropic_api_key)
-        llm_properties = get_model_properties(ProviderName.ANTHROPIC, llm_config.model)
+        llm_properties = get_model_properties(ProviderName.ANTHROPIC, self.llm_config.model)
         response = client.messages.create(
-            model=llm_config.model,
+            model=self.llm_config.model,
             max_tokens=llm_properties.output_token_max,
             temperature=0.1,
             messages=[{"role": "user", "content": prompt}],
@@ -92,7 +79,15 @@ def _build_anthropic_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
 
         return response.content[0].text
 
-    return analyze
+
+# very simple to create even LLM Interfaces that are not only provider specific, but also model specifc!
+def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:
+    if llm_config.provider_name == ProviderName.OPENAI:
+        return LlmInterfaceOpenAi(llm_config=llm_config)
+    elif llm_config.provider_name == ProviderName.ANTHROPIC:
+        return LlmInterfaceAnthropic(llm_config=llm_config)
+    else:
+        raise ValueError(f"Unknown provider: {llm_config.provider_name}")
 
 
 @lru_cache()

@@ -26,6 +26,7 @@ class BaseProvider:  # Joachim: <---- no types used! Better use pydantic or data
         self.properties = properties_dict[config.model]  # Joachim: <--- use @property decorator?
 
     # Joachim: The analyze function is missing! You must create an abstract BaseClass! Otherwise the whole thing makes no sense.
+    # or better use Protocol
 
 
 class OpenAIProvider(BaseProvider):

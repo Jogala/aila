@@ -66,13 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const defaultTemp = window.APP_CONFIG.DEFAULT_TEMPERATURE;
 
         if (defaultModel) {
-            document.getElementById('fileModel').value = defaultModel;
-            document.getElementById('textModel').value = defaultModel;
+            document.getElementById('llmModel').value = defaultModel;
         }
 
         if (defaultTemp !== undefined) {
-            document.getElementById('fileTemperature').value = defaultTemp;
-            document.getElementById('textTemperature').value = defaultTemp;
+            document.getElementById('llmTemperature').value = defaultTemp;
         }
     }
 
@@ -131,12 +129,18 @@ document.getElementById('fileAnalysisForm').addEventListener('submit', async (e)
         // Clear any previous text analysis data
         window.lastAnalyzedTexts = null;
 
+        // Get LLM settings from the shared panel
+        const llmProvider = document.getElementById('llmProvider').value;
+        const llmModel = document.getElementById('llmModel').value;
+        const llmTemperature = document.getElementById('llmTemperature').value;
+        const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
+
         // Create URL with query parameters for non-file data
         const url = new URL(`${API_BASE_URL}/api/analyze`);
-        url.searchParams.append('provider_name', formData.get('provider'));
-        url.searchParams.append('model', formData.get('model'));
-        url.searchParams.append('temperature', formData.get('temperature'));
-        url.searchParams.append('prompt_template', formData.get('prompt_template'));
+        url.searchParams.append('provider_name', llmProvider);
+        url.searchParams.append('model', llmModel);
+        url.searchParams.append('temperature', llmTemperature);
+        url.searchParams.append('prompt_template', llmPromptTemplate);
 
         // Create form data for files only
         const apiFormData = new FormData();
@@ -184,17 +188,23 @@ document.getElementById('textAnalysisForm').addEventListener('submit', async (e)
     submitBtn.disabled = true;
 
     try {
+        // Get LLM settings from the shared panel
+        const llmProvider = document.getElementById('llmProvider').value;
+        const llmModel = document.getElementById('llmModel').value;
+        const llmTemperature = parseFloat(document.getElementById('llmTemperature').value);
+        const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
+
         const requestBody = {
             doc1_text: formData.get('doc1_text'),
             doc2_text: formData.get('doc2_text'),
             name_doc1: formData.get('name_doc1'),
             name_doc2: formData.get('name_doc2'),
             llm_config: {
-                provider_name: formData.get('provider'),
-                model: formData.get('model'),
-                temperature: parseFloat(formData.get('temperature'))
+                provider_name: llmProvider,
+                model: llmModel,
+                temperature: llmTemperature
             },
-            prompt_template: formData.get('prompt_template')
+            prompt_template: llmPromptTemplate
         };
 
         // Store the original texts for document comparison

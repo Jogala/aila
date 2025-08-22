@@ -15,7 +15,6 @@ This script will create/update frontend/config.js with current environment setti
 """
 
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -23,15 +22,14 @@ from dotenv import load_dotenv
 
 
 def generate_frontend_config() -> None:
-    # Verify we're in the project root
-    if not Path(".env").exists():
-        print("❌ Error: .env file not found!")
-        print("   Please run this script from the project root directory where .env is located.")
-        print("   Example: python generate_config.py")
-        sys.exit(1)
-
-    # Load environment variables
-    load_dotenv()
+    # Load environment variables from .env if it exists (for local development)
+    env_file_path = Path(".env")
+    if env_file_path.exists():
+        print(f"📁 Loading .env file from {env_file_path.absolute()}")
+        load_dotenv(env_file_path)
+    else:
+        print("📁 No .env file found, using system environment variables (normal for production/Railway)")
+        # In production/Railway, environment variables are set directly by the platform
 
     # Get environment type
     environment = os.getenv("AILA_ENVIRONMENT", "development")

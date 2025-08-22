@@ -9,7 +9,7 @@ window.APP_CONFIG = {
     
     // Environment info
     ENVIRONMENT: 'staging',
-    GENERATED_AT: '2025-08-22T08:19:16.511488'
+    GENERATED_AT: '2025-08-22T08:40:15.907631'
 };
 
 console.log('Frontend config loaded:', window.APP_CONFIG);

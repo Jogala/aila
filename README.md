@@ -109,10 +109,34 @@ For production, consider:
 The frontend includes:
 - **Static files:** HTML, CSS, JS in `frontend/static/` directory
 - **FastAPI wrapper:** `frontend/main.py` that serves both frontend and API
+- **Configuration system:** `frontend/generate_config.py` for environment-based config
+
+#### Why `generate_config.py`?
+
+Browser JavaScript cannot read `.env` files or server environment variables directly. The `generate_config.py` script serves as a bridge that:
+
+1. **Reads** server environment variables (from `.env` file)
+2. **Transforms** them into JavaScript format 
+3. **Embeds** them in `frontend/static/config.js`
+4. **Serves** them to the browser at runtime
+
+**Environment Configuration:**
+- `AILA_ENVIRONMENT=development` → API connects to `http://localhost:8000`
+- `AILA_ENVIRONMENT=staging` → API uses same origin (Railway URL)
+- `AILA_ENVIRONMENT=production` → API uses same origin (production URL)
+
+**Usage:**
+```bash
+# Generate config for current environment
+poetry run python frontend/generate_config.py
+
+# Generate config for specific environment  
+AILA_ENVIRONMENT=staging poetry run python frontend/generate_config.py
+```
 
 **Development:** Use `uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload`
 
-**Production:** The Procfile is already configured for Heroku deployment with the frontend wrapper.
+**Production:** The Dockerfile automatically generates the config during build with `AILA_ENVIRONMENT=staging`.
 
 ## Development
 

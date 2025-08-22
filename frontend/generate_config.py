@@ -33,16 +33,26 @@ def generate_frontend_config() -> None:
     # Load environment variables
     load_dotenv()
 
-    # Get configuration values
-    api_port = os.getenv("AILA_API_FAST_API_PORT")
-    if api_port is None:
-        raise ValueError("❌ AILA_API_FAST_API_PORT must be set in .env file")
-
-    api_host = os.getenv("AILA_FAST_API_HOST", "localhost")
-    if not api_host:
-        raise ValueError("❌ AILA_FAST_API_HOST must be set in .env file or default to 'localhost'")
-
-    api_base_url = f"http://{api_host}:{api_port}"
+    # Get environment type
+    environment = os.getenv("AILA_ENVIRONMENT", "development")
+    
+    # Get configuration values based on environment
+    if environment == "development":
+        # Local development - use localhost
+        api_port = os.getenv("AILA_API_FAST_API_PORT", "8000")
+        api_host = os.getenv("AILA_FAST_API_HOST", "localhost")
+        api_base_url = f"http://{api_host}:{api_port}"
+    else:
+        # Railway deployment (staging/production) - use relative URLs or detect dynamically
+        railway_url = os.getenv("RAILWAY_STATIC_URL") or os.getenv("RAILWAY_PUBLIC_DOMAIN")
+        if railway_url:
+            api_base_url = f"https://{railway_url}"
+        else:
+            # Fallback: use relative URLs (same origin)
+            api_base_url = ""  # Empty means same origin
+    
+    print(f"🔧 Environment: {environment}")
+    print(f"🔧 API Base URL: {api_base_url}")
 
     # Generate config.js content
     config_content = f"""// Frontend configuration - Auto-generated from environment
@@ -55,7 +65,7 @@ window.APP_CONFIG = {{
     DEFAULT_TEMPERATURE: 0.1,
     
     // Environment info
-    ENVIRONMENT: '{os.getenv("ENVIRONMENT", "development")}',
+    ENVIRONMENT: '{environment}',
     GENERATED_AT: '{datetime.now().isoformat()}'
 }};
 

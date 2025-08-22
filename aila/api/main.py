@@ -194,7 +194,8 @@ async def analyze_documents_endpoint(
             doc1_text = load_document(filepath1)
             doc2_text = load_document(filepath2)
 
-            # Create LlmConfig from individual parameters
+            # Apply API key fallback logic and create LlmConfig
+            api_key = check_fallback_to_server_llm_api_key(api_key, provider_name)
             llm_config = LlmConfig(
                 provider_name=provider_name,
                 model=model,
@@ -245,8 +246,19 @@ async def analyze_texts_endpoint(request: AnalyzeTextsRequest) -> AnalysisResult
     try:
         logger.info(f"Starting text analysis: {request.name_doc1} vs {request.name_doc2}")
 
+        # Apply API key fallback logic
+        api_key = check_fallback_to_server_llm_api_key(request.llm_config.api_key, request.llm_config.provider_name)
+
+        # Create updated config with fallback API key
+        llm_config = LlmConfig(
+            provider_name=request.llm_config.provider_name,
+            model=request.llm_config.model,
+            temperature=request.llm_config.temperature,
+            api_key=api_key,
+        )
+
         # Perform analysis
-        llm_interface = get_llm_interface(request.llm_config)
+        llm_interface = get_llm_interface(llm_config)
 
         result = analyze_documents(
             llm_interface=llm_interface,

@@ -105,32 +105,34 @@
             <h3>🚀 FastAPI Server Setup Required</h3>
             <p>The analysis server is not running. Please start the FastAPI server to use the document analyzer.</p>
 
-            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start:</h4>
+            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start</h4>
             <div class="command-block">
-                # MAKE SURE YOU ARE ON THE ROOT DIRECTORY OF THE PROJECT, RUN ALL COMMANDS FROM THERE
+                # MAKE SURE YOU ARE IN THE PROJECT ROOT
             </div>
 
-            <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Quick Start:</h4>
             <div class="command-block">
-                <button class="copy-btn" onclick="copyToClipboard('cd aila && poetry install --with api')">Copy</button>
-                # Install dependencies
+                <button class="copy-btn" onclick="copyToClipboard('python -m venv .venv && . .venv/bin/activate && poetry config virtualenvs.create false && poetry install --with api')">Copy</button>
+                # Create and activate venv (once), then install
+                python -m venv .venv
+                source .venv/bin/activate
+                poetry config virtualenvs.create false
                 poetry install --with api
             </div>
 
             <div class="command-block">
                 <button class="copy-btn"
-                    onclick="copyToClipboard('python -m uvicorn aila.api.main:app --reload')">Copy</button>
+                    onclick="copyToClipboard('uvicorn aila.api.main:app --reload --port 8000')">Copy</button>
                 # Start the server
-                poetry run uvicorn aila.api.main:app --reload --port 8000
+                uvicorn aila.api.main:app --reload --port 8000
             </div>
 
             <p><strong>Alternative:</strong> If you have the server running on a different port, update your
                 <code>.env</code> file and regenerate the config:
             </p>
             <div class="command-block">
-                <button class="copy-btn" onclick="copyToClipboard('python generate_config.py')">Copy</button>
+                <button class="copy-btn" onclick="copyToClipboard('python frontend/generate_config.py')">Copy</button>
                 # Update frontend config
-                python generate_config.py
+                python frontend/generate_config.py
             </div>
 
             <button class="btn" onclick="checkServerStatus()" style="margin-top: 1rem; max-width: 200px;">

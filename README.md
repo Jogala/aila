@@ -21,7 +21,7 @@ cp .env.example .env
 
 # Run setup script
 chmod +x init.sh
-./setup.sh
+./init.sh
 
 # Start core API server (FROM PROJECT ROOT!)
 python -m uvicorn aila.api.main:app --reload
@@ -128,10 +128,10 @@ Browser JavaScript cannot read `.env` files or server environment variables dire
 **Usage:**
 ```bash
 # Generate config for current environment
-poetry run python frontend/generate_config.py
+python frontend/generate_config.py
 
 # Generate config for specific environment  
-AILA_ENVIRONMENT=staging poetry run python frontend/generate_config.py
+AILA_ENVIRONMENT=staging python frontend/generate_config.py
 ```
 
 **Development:** Use `uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload`
@@ -141,13 +141,18 @@ AILA_ENVIRONMENT=staging poetry run python frontend/generate_config.py
 ## Development
 
 ```bash
+# Local development setup
+python -m venv .venv
+source .venv/bin/activate
+poetry config virtualenvs.create false
+poetry install --with api
+# (When .env changes) regenerate frontend config
+python frontend/generate_config.py
+
 # Quality checks
 pyright
 ruff check .
 ruff format .
-
-# Tests
-pytest
 ```
 
 ## License & Notices

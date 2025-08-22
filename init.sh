@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup.sh
+# init.sh
 
 echo "🚀 Setting up project..."
 echo ""
@@ -41,15 +41,15 @@ if ! command -v poetry &> /dev/null; then
 fi
 echo "✓ Poetry found"
 
-# Update lock file
-echo "Updating lock file..."
-if ! poetry lock --no-update; then
-    echo "❌ Failed to update lock file"
+# Ensure Poetry installs into the active venv (no Poetry-managed venv)
+echo "Configuring Poetry to use current virtualenv..."
+if ! poetry config virtualenvs.create false --local; then
+    echo "❌ Failed to configure Poetry to avoid creating its own virtualenv"
     exit 1
 fi
-echo "✓ Lock file updated"
+echo "✓ Poetry will install into the current environment"
 
-# Install dependencies using poetry
+# Install dependencies using Poetry
 echo "Installing dependencies..."
 if ! poetry install --all-extras; then
     echo "❌ Failed to install dependencies"

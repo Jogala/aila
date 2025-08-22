@@ -139,6 +139,49 @@
         </div>
 
         <div class="sections">
+            <!-- Server API Keys Status Panel (shown when server has keys) -->
+            <div class="section" id="serverApiKeysPanel" style="display: none;">
+                <h2 class="section-title">✅ Server API Keys Configured</h2>
+                <div class="api-keys-info">
+                    <p><strong>🔐 Using Server API Keys</strong></p>
+                    <p>This server has API keys configured. Analysis will use the server's keys automatically.</p>
+                    <div id="serverKeyDetails"></div>
+                </div>
+            </div>
+            
+            <!-- User API Keys Panel (shown when server doesn't have keys) -->
+            <div class="section" id="userApiKeysPanel" style="display: none;">
+                <h2 class="section-title">🔑 API Keys Required</h2>
+                <div class="api-keys-info">
+                    <p><strong>⚠️ Server API Keys Not Configured</strong></p>
+                    <p>This server doesn't have API keys configured. Please provide your own API keys to use the analysis features.</p>
+                    <p><small><strong>Privacy:</strong> Your API keys are sent securely with each request and are never stored on the server.</small></p>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="userApiKeyProvider">API Key Provider</label>
+                        <select id="userApiKeyProvider" name="userApiKeyProvider" required>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                        </select>
+                        <small>Choose the provider for your API key</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="userApiKey">API Key</label>
+                        <input type="password" id="userApiKey" name="userApiKey" placeholder="sk-..." required>
+                        <small>
+                            OpenAI: Get from <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a><br>
+                            Anthropic: Get from <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="api-keys-note">
+                    <small><strong>Note:</strong> Make sure your API key provider matches the LLM provider selected in the configuration above.</small>
+                </div>
+            </div>
+            
             <!-- LLM Settings Panel -->
             <div class="section llm-settings">
                 <h2 class="section-title">⚙️ LLM Configuration</h2>
@@ -169,6 +212,7 @@
                     </div>
                 </div>
             </div>
+            
             <!-- File Upload Section -->
             <div class="section">
                 <h2 class="section-title">📄 Upload Documents for Analysis</h2>

@@ -1,4 +1,8 @@
 # Python Coding Standards
+Be critical but fair.
+Don't just say yes, question my suggestions, if you are in doubt.
+Do not simply be agreeable.
+Being critical does not mean you are unfriendly.
 
 ## Type Annotations
 - Use modern Python type hints (3.9+ syntax)

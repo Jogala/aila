@@ -4,6 +4,8 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
+from aila.llm_models import ProviderName
+
 
 class AppConfig(BaseModel):
     """Application configuration using Pydantic"""
@@ -13,8 +15,6 @@ class AppConfig(BaseModel):
     results_dir: Path
     log_llm_responses: bool
     path_logging_llm_responses: Path
-    openai_api_key: str | None
-    anthropic_api_key: str | None
 
     model_config = ConfigDict(
         frozen=True,
@@ -37,10 +37,8 @@ def get_config() -> AppConfig:
             prompt_templates_dir=Path(os.getenv("AILA_PROMPT_TEMPLATES_DIR", "prompt_templates")),
             data_dir=Path(os.getenv("AILA_DATA_DIR", "data")),
             results_dir=Path(os.getenv("AILA_RESULTS_DIR", "results")),
-            log_llm_responses=os.getenv("AILA_LOG_LLM_RESPONSE", "true").lower() == "true",
+            log_llm_responses=os.getenv("AILA_LOG_LLM_RESPONSE", "true").lower() == "false",
             path_logging_llm_responses=Path(os.getenv("AILA_PATH_LOGGING_LLM_RESPONSES", "logs/llm_responses.log")),
-            openai_api_key=os.getenv("AILA_OPENAI_API_KEY"),
-            anthropic_api_key=os.getenv("AILA_ANTHROPIC_API_KEY"),
         )
     return _config_instance
 
@@ -52,3 +50,11 @@ def set_config(config: AppConfig) -> None:
     """
     global _config_instance
     _config_instance = config
+
+
+def get_server_api_keys() -> dict[ProviderName, str | None]:
+    """Get server-side API keys for all providers from environment variables."""
+    return {
+        provider: os.getenv(f"AILA_{provider.value.upper()}_API_KEY")
+        for provider in ProviderName
+    }

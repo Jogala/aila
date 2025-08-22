@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from aila.config import get_server_api_keys
 from aila.legal_analyzer import AnalysisResult, analyze_documents
 from aila.llm_interface import get_llm_interface
 from aila.llm_models import LlmConfig, ProviderName
@@ -34,12 +35,10 @@ if path_env_file.exists():
 else:
     print("No .env file found, using environment variables from system")
 
-open_ai_key = os.getenv("AILA_OPENAI_API_KEY")
-anthropic_key = os.getenv("AILA_ANTHROPIC_API_KEY")
+SERVER_API_KEYS = get_server_api_keys()
 
-if not open_ai_key and not anthropic_key:
-    logger.warning("No API keys found. LLM functionality will be disabled.")
-    logger.warning("Set AILA_OPENAI_API_KEY or AILA_ANTHROPIC_API_KEY to enable AI features.")
+if not any(SERVER_API_KEYS.values()):
+    logger.warning("no server side api keys found")
 
 
 class AnalysisResultWithTexts(AnalysisResult):
@@ -92,6 +91,17 @@ def allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def check_fallback_to_server_llm_api_key(api_key: str, provider_name: ProviderName) -> str:
+    if api_key == "":
+        server_key = SERVER_API_KEYS.get(provider_name)
+        if server_key:
+            api_key = server_key
+            print(f"Using server-side API key for {provider_name}")
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key is required")
+    return api_key
+
+
 @app.get("/", response_class=JSONResponse)
 async def root() -> dict[str, str]:
     """Root endpoint."""
@@ -107,6 +117,12 @@ async def root() -> dict[str, str]:
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(status="healthy", service="AI Legal Assistant", version="1.0.0")
+
+
+@app.get("/api-keys-status", response_model=bool)
+async def get_api_keys_status() -> bool:
+    """Check which API keys are available on the server."""
+    return any(key and key.strip() for key in SERVER_API_KEYS.values())
 
 
 @app.get("/debug/config")
@@ -127,6 +143,7 @@ async def analyze_documents_endpoint(
     provider_name: ProviderName,
     model: str,
     temperature: float,
+    api_key: str,
     document1: UploadFile = File(..., description="First document to compare"),
     document2: UploadFile = File(..., description="Second document to compare"),
     prompt_template: str = "prompt_2.txt",
@@ -178,7 +195,12 @@ async def analyze_documents_endpoint(
             doc2_text = load_document(filepath2)
 
             # Create LlmConfig from individual parameters
-            llm_config = LlmConfig(provider_name=provider_name, model=model, temperature=temperature)
+            llm_config = LlmConfig(
+                provider_name=provider_name,
+                model=model,
+                temperature=temperature,
+                api_key=api_key,
+            )
 
             # Perform analysis
             llm_interface = get_llm_interface(llm_config)

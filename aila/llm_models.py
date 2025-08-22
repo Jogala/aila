@@ -25,15 +25,8 @@ class LlmConfig(BaseModel):
     provider_name: ProviderName
     model: str
     temperature: float
-
+    api_key: str
     model_config = ConfigDict(frozen=True)
-
-
-default_llm_config = LlmConfig(
-    provider_name=ProviderName.ANTHROPIC,
-    model="claude-3-5-sonnet-20241022",
-    temperature=0.1,
-)
 
 
 LLM_MODELS: List[LlmModelProperties] = [
@@ -129,7 +122,7 @@ def count_tokens(text: str, model: str) -> int:
             enc = tiktoken.get_encoding("cl100k_base")  # GPT-4 encoding
             token_count = len(enc.encode(text))
             return token_count
-        except Exception as e:
+        except Exception:
             # Fallback to character-based estimation
             estimated_tokens = len(text) // 4  # Rough estimate: 4 chars per token
             return estimated_tokens
@@ -137,7 +130,7 @@ def count_tokens(text: str, model: str) -> int:
         try:
             enc = tiktoken.encoding_for_model(model)
             return len(enc.encode(text))
-        except Exception as e:
+        except Exception:
             # Fallback to character-based estimation
             estimated_tokens = len(text) // 4  # Rough estimate: 4 chars per token
             return estimated_tokens

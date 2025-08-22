@@ -3,6 +3,7 @@
 // Use configuration from config.js
 const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8000';
 let serverConnected = false;
+let serverApiKeysStatus = null;
 
 // Check server status
 async function checkServerStatus() {
@@ -27,6 +28,9 @@ async function checkServerStatus() {
             serverGuide.style.display = 'none';
             sections.style.display = 'grid';
             serverConnected = true;
+            
+            // Check API keys status
+            await checkApiKeysStatus();
         } else {
             throw new Error(`Server responded with ${response.status}`);
         }
@@ -45,6 +49,132 @@ async function checkServerStatus() {
             serverGuide.querySelector('p').textContent =
                 'Server connection timed out. The server might be starting up or overloaded.';
         }
+    }
+}
+
+// Check API keys status
+async function checkApiKeysStatus() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/api-keys-status`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(5000)
+        });
+
+        if (response.ok) {
+            const hasServerKeys = await response.json();
+            console.log('Server has API keys:', hasServerKeys);
+            
+            // Show/hide API keys panels based on server capability
+            toggleApiKeysPanels(!hasServerKeys); // Invert: if server has keys, don't require user keys
+            
+            // Store for compatibility
+            serverApiKeysStatus = { 
+                has_openai_key: hasServerKeys, 
+                has_anthropic_key: hasServerKeys, 
+                requires_user_keys: !hasServerKeys 
+            };
+        }
+    } catch (error) {
+        console.warn('Failed to check API keys status:', error);
+        // Assume user keys are required if we can't check
+        toggleApiKeysPanels(true);
+    }
+}
+
+// Show or hide the API keys panels
+function toggleApiKeysPanels(requiresUserKeys) {
+    const userKeysPanel = document.getElementById('userApiKeysPanel');
+    const serverKeysPanel = document.getElementById('serverApiKeysPanel');
+    
+    // Always show the user keys panel
+    if (userKeysPanel) userKeysPanel.style.display = 'block';
+    
+    if (requiresUserKeys) {
+        // Hide server keys panel when user keys are required
+        if (serverKeysPanel) serverKeysPanel.style.display = 'none';
+        
+        // Update user panel messaging for required keys
+        updateUserKeysMessage(true);
+    } else {
+        // Show server keys panel when server keys are available
+        if (serverKeysPanel) serverKeysPanel.style.display = 'block';
+        
+        // Update server key details
+        updateServerKeyDetails();
+        
+        // Update user panel messaging for optional keys
+        updateUserKeysMessage(false);
+    }
+    
+    // Update button states after panel visibility changes
+    updateAnalyzeButtonStates();
+}
+
+// Update user keys panel messaging
+function updateUserKeysMessage(required) {
+    const userKeysPanel = document.getElementById('userApiKeysPanel');
+    if (!userKeysPanel) return;
+    
+    const userPanelTitle = userKeysPanel.querySelector('.section-title');
+    const userPanelInfo = userKeysPanel.querySelector('.api-keys-info');
+    
+    if (required) {
+        // Server keys not available - user keys required
+        if (userPanelTitle) {
+            userPanelTitle.textContent = '🔑 API Keys Required';
+        }
+        if (userPanelInfo) {
+            userPanelInfo.innerHTML = `
+                <p><strong>⚠️ Server API Keys Not Configured</strong></p>
+                <p>This server doesn't have API keys configured. Please provide your own API keys to use the analysis features.</p>
+                <p><small><strong>Privacy:</strong> Your API keys are sent securely with each request and are never stored on the server.</small></p>
+            `;
+        }
+    } else {
+        // Server keys available - user keys optional
+        if (userPanelTitle) {
+            userPanelTitle.textContent = '🔑 API Keys (Optional Override)';
+        }
+        if (userPanelInfo) {
+            userPanelInfo.innerHTML = `
+                <p><strong>🎛️ Override Server API Keys (Optional)</strong></p>
+                <p>Leave empty to use server API keys, or provide your own to override the server configuration.</p>
+                <p><small><strong>Privacy:</strong> Your API keys (if provided) are sent securely with each request and are never stored on the server.</small></p>
+            `;
+        }
+    }
+}
+
+// Update server key details display
+function updateServerKeyDetails() {
+    const serverKeyDetails = document.getElementById('serverKeyDetails');
+    const serverKeysPanel = document.getElementById('serverApiKeysPanel');
+    if (!serverKeyDetails || !serverApiKeysStatus) return;
+    
+    const availableKeys = [];
+    if (serverApiKeysStatus.has_openai_key) availableKeys.push('OpenAI');
+    if (serverApiKeysStatus.has_anthropic_key) availableKeys.push('Anthropic');
+    
+    if (availableKeys.length > 0) {
+        // Update the server panel title and description when user field is also shown
+        const serverPanelTitle = serverKeysPanel.querySelector('.section-title');
+        const serverPanelInfo = serverKeysPanel.querySelector('.api-keys-info p');
+        
+        if (serverPanelTitle) {
+            serverPanelTitle.textContent = '🔐 Server API Keys Available (Optional Override Below)';
+        }
+        
+        if (serverPanelInfo) {
+            serverPanelInfo.innerHTML = '<strong>✨ You can use server keys or provide your own</strong>';
+        }
+        
+        serverKeyDetails.innerHTML = `
+            <p><small>
+                <strong>Available server providers:</strong> ${availableKeys.join(', ')}<br>
+                <strong>Priority:</strong> Your API key (if provided) takes precedence over server keys<br>
+                <strong>Status:</strong> Ready for analysis
+            </small></p>
+        `;
     }
 }
 
@@ -76,6 +206,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Check server status on page load
     checkServerStatus();
+
+    // Add event listener to user API key input to update button states
+    const userApiKeyInput = document.getElementById('userApiKey');
+    if (userApiKeyInput) {
+        userApiKeyInput.addEventListener('input', updateAnalyzeButtonStates);
+        userApiKeyInput.addEventListener('paste', () => {
+            // Use setTimeout to ensure the pasted value is processed
+            setTimeout(updateAnalyzeButtonStates, 10);
+        });
+    }
 });
 
 // Enhanced error handling for API calls
@@ -111,6 +251,88 @@ async function makeApiCall(url, options = {}) {
     }
 }
 
+// Validate API key provider matches LLM provider
+function validateApiKeyProvider() {
+    const userKeysPanel = document.getElementById('userApiKeysPanel');
+    if (!userKeysPanel || userKeysPanel.style.display === 'none') {
+        return true; // No validation needed if user keys panel is hidden
+    }
+
+    const llmProvider = document.getElementById('llmProvider').value;
+    const userApiKeyProvider = document.getElementById('userApiKeyProvider').value;
+    
+    if (llmProvider !== userApiKeyProvider) {
+        throw new Error(`API key provider (${userApiKeyProvider}) must match LLM provider (${llmProvider})`);
+    }
+    
+    const userApiKey = document.getElementById('userApiKey').value;
+    if (!userApiKey || userApiKey.trim() === '') {
+        throw new Error('API key is required when server keys are not configured');
+    }
+    
+    return true;
+}
+
+// Validate that analysis can proceed (combines both API key and button state validation)
+function validateCanProceedWithAnalysis() {
+    if (!canProceedWithAnalysis()) {
+        throw new Error('API key is required when server keys are not configured');
+    }
+    
+    // Only check provider match if user actually provided an API key
+    const userApiKey = document.getElementById('userApiKey').value.trim();
+    if (userApiKey.length > 0) {
+        const llmProvider = document.getElementById('llmProvider').value;
+        const userApiKeyProvider = document.getElementById('userApiKeyProvider').value;
+        
+        if (llmProvider !== userApiKeyProvider) {
+            throw new Error(`API key provider (${userApiKeyProvider}) must match LLM provider (${llmProvider})`);
+        }
+    }
+    
+    return true;
+}
+
+// Get user API key if provided
+function getUserApiKey() {
+    const userApiKey = document.getElementById('userApiKey').value.trim();
+    return userApiKey.length > 0 ? userApiKey : null;
+}
+
+// Check if analysis can proceed (either server keys available or user provided valid API key)
+function canProceedWithAnalysis() {
+    const userApiKey = document.getElementById('userApiKey').value.trim();
+    const serverKeysPanel = document.getElementById('serverApiKeysPanel');
+    
+    // If user provided a key, we can proceed
+    if (userApiKey.length > 0) {
+        return true;
+    }
+    
+    // If no user key, check if server keys are available
+    const hasServerKeys = serverKeysPanel && serverKeysPanel.style.display !== 'none';
+    return hasServerKeys;
+}
+
+// Update button states based on API key availability
+function updateAnalyzeButtonStates() {
+    const fileAnalyzeBtn = document.querySelector('#fileAnalysisForm button[type="submit"]');
+    const textAnalyzeBtn = document.querySelector('#textAnalysisForm button[type="submit"]');
+    const canProceed = canProceedWithAnalysis();
+    
+    if (fileAnalyzeBtn) {
+        fileAnalyzeBtn.disabled = !canProceed;
+        fileAnalyzeBtn.style.opacity = canProceed ? '1' : '0.5';
+        fileAnalyzeBtn.style.cursor = canProceed ? 'pointer' : 'not-allowed';
+    }
+    
+    if (textAnalyzeBtn) {
+        textAnalyzeBtn.disabled = !canProceed;
+        textAnalyzeBtn.style.opacity = canProceed ? '1' : '0.5';
+        textAnalyzeBtn.style.cursor = canProceed ? 'pointer' : 'not-allowed';
+    }
+}
+
 // Handle file upload form
 document.getElementById('fileAnalysisForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -126,6 +348,9 @@ document.getElementById('fileAnalysisForm').addEventListener('submit', async (e)
     submitBtn.disabled = true;
 
     try {
+        // Validate that analysis can proceed
+        validateCanProceedWithAnalysis();
+        
         // Clear any previous text analysis data
         window.lastAnalyzedTexts = null;
 
@@ -134,6 +359,7 @@ document.getElementById('fileAnalysisForm').addEventListener('submit', async (e)
         const llmModel = document.getElementById('llmModel').value;
         const llmTemperature = document.getElementById('llmTemperature').value;
         const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
+        const userApiKey = getUserApiKey();
 
         // Create URL with query parameters for non-file data
         const url = new URL(`${API_BASE_URL}/api/analyze`);
@@ -141,6 +367,8 @@ document.getElementById('fileAnalysisForm').addEventListener('submit', async (e)
         url.searchParams.append('model', llmModel);
         url.searchParams.append('temperature', llmTemperature);
         url.searchParams.append('prompt_template', llmPromptTemplate);
+        // Always send api_key parameter (empty string if using server keys)
+        url.searchParams.append('api_key', userApiKey || '');
 
         // Create form data for files only
         const apiFormData = new FormData();
@@ -188,11 +416,15 @@ document.getElementById('textAnalysisForm').addEventListener('submit', async (e)
     submitBtn.disabled = true;
 
     try {
+        // Validate that analysis can proceed
+        validateCanProceedWithAnalysis();
+        
         // Get LLM settings from the shared panel
         const llmProvider = document.getElementById('llmProvider').value;
         const llmModel = document.getElementById('llmModel').value;
         const llmTemperature = parseFloat(document.getElementById('llmTemperature').value);
         const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
+        const userApiKey = getUserApiKey();
 
         const requestBody = {
             doc1_text: formData.get('doc1_text'),
@@ -202,7 +434,8 @@ document.getElementById('textAnalysisForm').addEventListener('submit', async (e)
             llm_config: {
                 provider_name: llmProvider,
                 model: llmModel,
-                temperature: llmTemperature
+                temperature: llmTemperature,
+                api_key: userApiKey || '' // Use user key or empty string for server key
             },
             prompt_template: llmPromptTemplate
         };

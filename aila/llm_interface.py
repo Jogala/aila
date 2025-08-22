@@ -5,7 +5,6 @@ import anthropic
 import openai
 import pydantic
 
-from aila.config import get_config
 from aila.llm_models import LlmConfig, ProviderName, get_model_properties
 
 
@@ -37,7 +36,7 @@ def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:
 
 def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     def analyze(prompt: str) -> str:
-        client = _get_openai_client(api_key=get_config().openai_api_key)
+        client = _get_openai_client(api_key=llm_config.api_key)
         llm_properties = get_model_properties(ProviderName.OPENAI, llm_config.model)
 
         messages = [
@@ -72,7 +71,7 @@ def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
 
 def _build_anthropic_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     def analyze(prompt: str) -> str:
-        client = _get_anthropic_client(api_key=get_config().anthropic_api_key)
+        client = _get_anthropic_client(api_key=llm_config.api_key)
         llm_properties = get_model_properties(ProviderName.ANTHROPIC, llm_config.model)
         response = client.messages.create(
             model=llm_config.model,

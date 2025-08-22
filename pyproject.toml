@@ -109,12 +109,12 @@ exclude = [
     "scripts",
     "cache",
     "data",
-    "results"
+    "results",
 ]
 
 # Type checking configuration
-reportMissingImports = false  # Handle third-party libraries without stubs
-reportMissingTypeStubs = false  # Due to third-party libraries
+reportMissingImports = false              # Handle third-party libraries without stubs
+reportMissingTypeStubs = false            # Due to third-party libraries
 reportPrivateUsage = false
 reportConstantRedefinition = false
 reportIncompatibleMethodOverride = true

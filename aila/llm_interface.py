@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import anthropic
 import openai
@@ -10,6 +10,7 @@ from aila.llm_models import LlmConfig, ProviderName, get_model_properties
 
 
 # Protocol instead of AnalyzeFn = Callable[[str], str], s.t. IDE knows argument names when calling function
+@runtime_checkable
 class AnalyzeFn(Protocol):
     def __call__(self, prompt: str) -> str: ...
 
@@ -22,10 +23,6 @@ class LlmInterface(pydantic.BaseModel):
         arbitrary_types_allowed=True,
         frozen=True,
     )
-
-    # Convenience only — preserves Context Object; no new state, to fit OOP team style
-    def analyze(self, prompt: str) -> str:
-        return self.analyze_fn(prompt)
 
 
 def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:

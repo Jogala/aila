@@ -9,10 +9,85 @@
 </head>
 
 <body>
-    <!-- Load configuration first -->
-    <script src="/static/config.js"></script>
+    <!-- Disclaimer Popup -->
+    <div id="disclaimerModal" class="disclaimer-modal">
+        <div class="disclaimer-content">
+            <h1>⚠️ IMPORTANT DISCLAIMER - PROTOTYPE DEMONSTRATION ONLY</h1>
+            
+            <h2>Before proceeding, please read and accept the following terms:</h2>
+            
+            <div class="disclaimer-section">
+                <h3>🚨 NO LEGAL ADVICE</h3>
+                <p>This tool is a <strong>technology demonstration only</strong> and does not provide legal advice. The analysis, summaries, or interpretations generated are for informational and testing purposes only. <strong>Do not rely on this tool for any legal decisions.</strong></p>
+            </div>
+            
+            <div class="disclaimer-section">
+                <h3>🧪 PROTOTYPE STATUS</h3>
+                <ul>
+                    <li>This is an <strong>experimental prototype</strong> with limited accuracy</li>
+                    <li>Results may contain errors, omissions, or misinterpretations</li>
+                    <li>The tool is under development and not suitable for production use</li>
+                    <li>Features and functionality may change or break without notice</li>
+                </ul>
+            </div>
+            
+            <div class="disclaimer-section">
+                <h3>🔒 DATA & PRIVACY</h3>
+                <ul>
+                    <li><strong>Do not upload confidential, privileged, or sensitive legal documents</strong></li>
+                    <li>Uploaded content may be processed by third-party services</li>
+                    <li>We cannot guarantee the security or confidentiality of uploaded materials</li>
+                    <li>Use only publicly available or non-sensitive test documents</li>
+                </ul>
+            </div>
+            
+            <div class="disclaimer-section">
+                <h3>⚖️ LEGAL LIMITATIONS</h3>
+                <ul>
+                    <li><strong>Always consult qualified legal professionals</strong> for actual legal matters</li>
+                    <li>This tool cannot replace human legal expertise or judgment</li>
+                    <li>Different jurisdictions have varying laws - this tool cannot account for all variations</li>
+                    <li>Document analysis may miss critical legal nuances or context</li>
+                </ul>
+            </div>
+            
+            <div class="disclaimer-section">
+                <h3>🛡️ LIMITATION OF LIABILITY</h3>
+                <p>By using this prototype, you acknowledge that:</p>
+                <ul>
+                    <li>The developers assume <strong>no liability</strong> for any decisions made based on this tool's output</li>
+                    <li>You use this service entirely <strong>at your own risk</strong></li>
+                    <li>This tool is provided "as-is" without warranties of any kind</li>
+                    <li>We are not responsible for any damages, losses, or consequences from use</li>
+                </ul>
+            </div>
+            
+            <div class="disclaimer-section">
+                <h3>✅ ACCEPTANCE</h3>
+                <p>By clicking "I Understand and Accept" below, you confirm that you:</p>
+                <ul>
+                    <li>Understand this is a prototype for demonstration purposes only</li>
+                    <li>Will not use this tool for actual legal decision-making</li>
+                    <li>Will not upload confidential or sensitive documents</li>
+                    <li>Agree to the limitations and disclaimers above</li>
+                    <li>Will seek professional legal counsel for any real legal matters</li>
+                </ul>
+            </div>
+            
+            <div class="disclaimer-footer">
+                <strong>Remember: When in doubt, consult a real lawyer!</strong>
+            </div>
+            
+            <button id="acceptDisclaimer" class="accept-btn">I Understand and Accept</button>
+        </div>
+    </div>
 
-    <div class="container">
+    <!-- Main Application (initially hidden) -->
+    <div id="mainApp" class="main-app" style="display: none;">
+        <!-- Load configuration first -->
+        <script src="/static/config.js"></script>
+
+        <div class="container">
         <div class="header">
             <h1>Aila - Your AI Legal Assistant (Demo)</h1>
             <p>AI-powered legal document comparison and analysis</p>
@@ -184,8 +259,30 @@
             <div id="resultsContent"></div>
         </div>
     </div>
+    </div>
 
     <script src="/static/scripts.js"></script>
+    <script>
+        // Handle disclaimer modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const disclaimerModal = document.getElementById('disclaimerModal');
+            const acceptBtn = document.getElementById('acceptDisclaimer');
+            const mainApp = document.getElementById('mainApp');
+            
+            // Check if user has already accepted (stored in localStorage)
+            if (localStorage.getItem('disclaimerAccepted') === 'true') {
+                disclaimerModal.style.display = 'none';
+                mainApp.style.display = 'block';
+            }
+            
+            // Handle accept button click
+            acceptBtn.addEventListener('click', function() {
+                localStorage.setItem('disclaimerAccepted', 'true');
+                disclaimerModal.style.display = 'none';
+                mainApp.style.display = 'block';
+            });
+        });
+    </script>
 </body>
 
 </html>

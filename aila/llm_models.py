@@ -113,6 +113,11 @@ def get_model_properties(provider_name: ProviderName, model: str) -> LlmModelPro
     )
 
 
+def get_models(provider: ProviderName) -> List[str]:
+    """Get list of available models for a given provider."""
+    return [model.model for model in LLM_MODELS if model.provider_name == provider]
+
+
 def count_tokens(text: str, model: str) -> int:
     """Count tokens in text for the given model."""
     if model.startswith("claude"):

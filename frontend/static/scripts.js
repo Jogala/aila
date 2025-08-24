@@ -2,6 +2,8 @@
 
 // Use configuration from config.js
 const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8000';
+// Request timeout for analysis calls (defaults to 120s if not configured)
+const REQUEST_TIMEOUT_MS = window.APP_CONFIG?.REQUEST_TIMEOUT_MS ?? 120000;
 let serverConnected = false;
 let serverApiKeysStatus = null;
 
@@ -31,6 +33,16 @@ async function checkServerStatus() {
             
             // Check API keys status
             await checkApiKeysStatus();
+
+            // Populate model list for current provider once connected
+            try {
+                const provider = document.getElementById('llmProvider')?.value;
+                if (provider) {
+                    await updateModelsForProvider(provider);
+                }
+            } catch (e) {
+                console.warn('Failed to load models after server connect:', e);
+            }
         } else {
             throw new Error(`Server responded with ${response.status}`);
         }
@@ -207,6 +219,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check server status on page load
     checkServerStatus();
 
+    // When provider changes, update available models
+    const providerSelect = document.getElementById('llmProvider');
+    if (providerSelect) {
+        providerSelect.addEventListener('change', async (e) => {
+            const provider = e.target.value;
+            try {
+                await updateModelsForProvider(provider);
+            } catch (err) {
+                console.warn('Failed to update models for provider change:', err);
+            }
+        });
+    }
+
     // Add event listener to user API key input to update button states
     const userApiKeyInput = document.getElementById('userApiKey');
     if (userApiKeyInput) {
@@ -218,6 +243,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Fetch and update model options for a provider
+async function updateModelsForProvider(provider) {
+    const modelSelect = document.getElementById('llmModel');
+    if (!modelSelect) return;
+
+    // Show loading state
+    modelSelect.disabled = true;
+    modelSelect.innerHTML = '<option disabled selected>Loading models...</option>';
+
+    // Build request (endpoint expects query param on POST)
+    const url = new URL(`${API_BASE_URL}/api/models`);
+    url.searchParams.set('provider_name', provider);
+
+    const response = await makeApiCall(url.toString(), {
+        method: 'POST'
+    });
+
+    const models = await response.json();
+
+    // Populate options
+    modelSelect.innerHTML = '';
+    if (Array.isArray(models) && models.length > 0) {
+        for (const m of models) {
+            const opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            modelSelect.appendChild(opt);
+        }
+
+        // Try to keep/choose a sensible default
+        const desired = (window.APP_CONFIG && window.APP_CONFIG.DEFAULT_MODEL) || '';
+        if (desired && models.includes(desired)) {
+            modelSelect.value = desired;
+        } else {
+            modelSelect.selectedIndex = 0;
+        }
+    } else {
+        const opt = document.createElement('option');
+        opt.disabled = true;
+        opt.selected = true;
+        opt.textContent = 'No models available';
+        modelSelect.appendChild(opt);
+    }
+
+    modelSelect.disabled = false;
+}
+
 // Enhanced error handling for API calls
 async function makeApiCall(url, options = {}) {
     if (!serverConnected) {
@@ -227,7 +299,8 @@ async function makeApiCall(url, options = {}) {
     try {
         const response = await fetch(url, {
             ...options,
-            signal: AbortSignal.timeout(30000) // 30 second timeout for analysis
+            // Allow longer-running analyses (configurable via APP_CONFIG)
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
         });
 
         if (!response.ok) {

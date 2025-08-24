@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from aila.config import get_server_api_keys
 from aila.legal_analyzer import AnalysisResult, analyze_documents
 from aila.llm_interface import get_llm_interface
-from aila.llm_models import LlmConfig, ProviderName
+from aila.llm_models import LlmConfig, ProviderName, get_models
 from aila.load_document import load_document
 
 logging.basicConfig(level=logging.INFO)
@@ -117,6 +117,12 @@ async def root() -> dict[str, str]:
 async def health_check() -> HealthResponse:
     """Health check endpoint."""
     return HealthResponse(status="healthy", service="AI Legal Assistant", version="1.0.0")
+
+
+@app.post("/models", response_model=list[str])
+async def get_available_models(provider_name: ProviderName) -> list[str]:
+    """Get available models endpoint."""
+    return get_models(provider_name)
 
 
 @app.get("/api-keys-status", response_model=bool)

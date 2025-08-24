@@ -33,6 +33,8 @@ def generate_frontend_config() -> None:
 
     # Get environment type
     environment = os.getenv("AILA_ENVIRONMENT", "development")
+    # Frontend request timeout for long-running analysis (ms)
+    request_timeout_ms = int(os.getenv("AILA_FRONTEND_REQUEST_TIMEOUT_MS", "120000"))
     
     # Get configuration values based on environment
     if environment == "development":
@@ -61,6 +63,7 @@ window.APP_CONFIG = {{
     API_VERSION: 'v1',
     DEFAULT_MODEL: 'claude-3-5-haiku-20241022',
     DEFAULT_TEMPERATURE: 0.1,
+    REQUEST_TIMEOUT_MS: {request_timeout_ms},
     
     // Environment info
     ENVIRONMENT: '{environment}',

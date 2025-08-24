@@ -9,18 +9,20 @@
 
 ## Build, Test, and Development Commands
 - Install deps: `poetry install --with api` (Python 3.12).
-- Run API only: `poetry run python -m uvicorn aila.api.main:app --reload`.
-- Run frontend+API: `poetry run uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload`.
+- Run API only: `uvicorn aila.api.main:app --reload`.
+- Run frontend+API: `uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload`.
 - Type check: `pyright`.
 - Lint/format: `ruff check .` and `ruff format .`.
-- Tests: `pytest` (see Testing Guidelines).
 - Docker (optional): `docker compose up --build -d`.
 
 ## Coding Style & Naming Conventions
 - Python: 4-space indents, max line length 120, double quotes (ruff format). Target `py312`.
 - Names: modules/files `snake_case.py`; functions/vars `snake_case`; classes `PascalCase`; constants `UPPER_SNAKE`.
-- Types: prefer explicit type hints; repo uses Pyright strict mode—fix reported issues rather than suppressing.
+- Types: follow `CLAUDE.md` — use built-in generics (`list`, `dict`, `tuple`) and `|` for unions; add clear annotations.
+- Data models: prefer Pydantic `BaseModel` over dataclasses for simple containers; set `arbitrary_types_allowed=True` when storing SDK clients.
 - Imports: keep unused imports out (ruff enforces). Group stdlib/third-party/local.
+ - Time: use `time.monotonic()` for TTLs/timeouts to avoid wall-clock jumps.
+ - Services vs data: use plain classes for services (locks, I/O, background tasks) and Pydantic models for data.
 
 ## Testing Guidelines
 - Frameworks: `pytest`, `pytest-asyncio`; HTTP tests via `httpx` against FastAPI app.
@@ -34,5 +36,5 @@
 
 ## Security & Configuration Tips
 - Secrets: never commit API keys. Use `.env` (see `.env.example`).
-- Frontend config: generate `frontend/static/config.js` via `poetry run python frontend/generate_config.py` with `AILA_ENVIRONMENT` set.
+- Frontend config: generate `frontend/static/config.js` via `python frontend/generate_config.py` with `AILA_ENVIRONMENT` set.
 - Logs: avoid printing secrets; validate via `/health` before testing endpoints.

@@ -1,13 +1,10 @@
-import atexit
-import hashlib
-import threading
-import time
-from typing import Protocol, runtime_checkable, TypedDict, Any, Callable
+from typing import Any, Protocol, runtime_checkable
 
 import anthropic
 import openai
 import pydantic
 
+from aila.client_pool import ClientPool
 from aila.llm_models import LlmConfig, ProviderName, get_model_properties
 
 
@@ -39,7 +36,11 @@ def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:
 
 def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     def analyze(prompt: str) -> str:
-        client = _get_client(ProviderName.OPENAI, api_key=llm_config.api_key)
+        client = _CLIENT_POOL.get_client(
+            provider=ProviderName.OPENAI,
+            api_key=llm_config.api_key,
+            factory=lambda api_key: openai.OpenAI(api_key=api_key),
+        )
         llm_properties = get_model_properties(ProviderName.OPENAI, llm_config.model)
 
         messages = [
@@ -74,7 +75,11 @@ def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
 
 def _build_anthropic_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     def analyze(prompt: str) -> str:
-        client = _get_client(ProviderName.ANTHROPIC, api_key=llm_config.api_key)
+        client = _CLIENT_POOL.get_client(
+            provider=ProviderName.ANTHROPIC,
+            api_key=llm_config.api_key,
+            factory=lambda api_key: anthropic.Anthropic(api_key=api_key),
+        )
         llm_properties = get_model_properties(ProviderName.ANTHROPIC, llm_config.model)
         response = client.messages.create(
             model=llm_config.model,
@@ -91,106 +96,4 @@ def _build_anthropic_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     return analyze
 
 
-# ----- Client pooling with TTL & cleanup -----
-
-class _ClientEntry(TypedDict):
-    client: Any
-    last_used: float
-    created_at: float
-
-
-_LOCK = threading.Lock()
-_POOL: dict[tuple[ProviderName, str], _ClientEntry] = {}
-
-# User-provided keys: short TTL and bounded pool; Server keys: effectively sticky
-_USER_CLIENT_TTL_SECONDS = 15 * 60  # 15 minutes
-_USER_POOL_MAX_SIZE = 128
-
-
-def _hash_key(key: str) -> str:
-    """Hash API key for use as cache key to avoid storing plaintext in indices."""
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()
-
-
-def _make_client(provider: ProviderName, api_key: str) -> Any:
-    if provider == ProviderName.OPENAI:
-        return openai.OpenAI(api_key=api_key)
-    elif provider == ProviderName.ANTHROPIC:
-        return anthropic.Anthropic(api_key=api_key)
-    else:
-        raise ValueError(f"Unknown provider: {provider}")
-
-
-def _maybe_close(obj: Any) -> None:
-    closer: Any = getattr(obj, "close", None)
-    if callable(closer):
-        try:
-            closer()
-        except Exception:
-            # Best-effort close; ignore errors
-            pass
-
-
-def _evict_if_needed() -> None:
-    """Evict least-recently-used clients when pool exceeds max size."""
-    entries: list[tuple[tuple[ProviderName, str], _ClientEntry]] = list(_POOL.items())
-    if len(entries) <= _USER_POOL_MAX_SIZE:
-        return
-    # Sort by last_used ascending (LRU)
-    entries.sort(key=lambda item: item[1]["last_used"])  # oldest first
-    to_remove = len(entries) - _USER_POOL_MAX_SIZE
-    for i in range(to_remove):
-        key, entry = entries[i]
-        _maybe_close(entry["client"])
-        _POOL.pop(key, None)
-
-
-def _purge_expired(now: float | None = None) -> None:
-    ts = now or time.time()
-    expired_keys: list[tuple[ProviderName, str]] = []
-    for key, entry in _POOL.items():
-        if ts - entry["last_used"] > _USER_CLIENT_TTL_SECONDS:
-            expired_keys.append(key)
-    for key in expired_keys:
-        entry = _POOL.pop(key, None)
-        if entry is not None:
-            _maybe_close(entry["client"])
-
-
-def _get_client(provider: ProviderName, api_key: str) -> Any:
-    """
-    Get a client with bounded, TTL-based reuse for all keys.
-    - Reuse for 15 minutes since last use; evict LRU beyond pool size.
-    - API keys are hashed for indexing to avoid storing plaintext in map keys.
-    """
-    if api_key == "":
-        # Should not happen here (API layer already handles fallback), but guard anyway
-        raise ValueError("API key must not be empty")
-
-    key_hash = _hash_key(api_key)
-    idx = (provider, key_hash)
-
-    now = time.time()
-    with _LOCK:
-        _purge_expired(now)
-
-        entry = _POOL.get(idx)
-        if entry is not None:
-            entry["last_used"] = now
-            return entry["client"]
-
-        # Create new client, record entry
-        client = _make_client(provider, api_key)
-        _POOL[idx] = _ClientEntry(client=client, last_used=now, created_at=now)
-
-        _evict_if_needed()
-
-        return client
-
-
-@atexit.register
-def _shutdown_client_pool() -> None:
-    with _LOCK:
-        for entry in list(_POOL.values()):
-            _maybe_close(entry["client"])
-        _POOL.clear()
+_CLIENT_POOL = ClientPool()

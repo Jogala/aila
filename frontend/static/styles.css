@@ -272,6 +272,7 @@ label {
 input[type="file"],
 input[type="text"],
 input[type="number"],
+input[type="password"],
 select,
 textarea {
     width: 100%;

@@ -1,5 +1,16 @@
 // AILA - AI Legal Assistant JavaScript
 
+// XSS-safe HTML escaping utility
+function escapeHtml(unsafe) {
+    if (unsafe == null) return '';
+    return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 // Use configuration from config.js
 const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8000';
 // Request timeout for analysis calls (defaults to 120s if not configured)
@@ -139,7 +150,6 @@ function updateUserKeysMessage(required) {
             userPanelInfo.innerHTML = `
                 <p><strong>⚠️ Server API Keys Not Configured</strong></p>
                 <p>This server doesn't have API keys configured. Please provide your own API keys to use the analysis features.</p>
-                <p><small><strong>Privacy:</strong> Your API keys are sent securely with each request and are never stored on the server.</small></p>
             `;
         }
     } else {
@@ -151,7 +161,6 @@ function updateUserKeysMessage(required) {
             userPanelInfo.innerHTML = `
                 <p><strong>🎛️ Override Server API Keys (Optional)</strong></p>
                 <p>Leave empty to use server API keys, or provide your own to override the server configuration.</p>
-                <p><small><strong>Privacy:</strong> Your API keys (if provided) are sent securely with each request and are never stored on the server.</small></p>
             `;
         }
     }
@@ -182,7 +191,7 @@ function updateServerKeyDetails() {
         
         serverKeyDetails.innerHTML = `
             <p><small>
-                <strong>Available server providers:</strong> ${availableKeys.join(', ')}<br>
+                <strong>Available server providers:</strong> ${escapeHtml(availableKeys.join(', '))}<br>
                 <strong>Priority:</strong> Your API key (if provided) takes precedence over server keys<br>
                 <strong>Status:</strong> Ready for analysis
             </small></p>
@@ -432,22 +441,27 @@ document.getElementById('fileAnalysisForm').addEventListener('submit', async (e)
         const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
         const userApiKey = getUserApiKey();
 
-        // Create URL with query parameters for non-file data
+        // Create URL with query parameters for non-file data (excluding api_key)
         const url = new URL(`${API_BASE_URL}/api/analyze`);
         url.searchParams.append('provider_name', llmProvider);
         url.searchParams.append('model', llmModel);
         url.searchParams.append('temperature', llmTemperature);
         url.searchParams.append('prompt_template', llmPromptTemplate);
-        // Always send api_key parameter (empty string if using server keys)
-        url.searchParams.append('api_key', userApiKey || '');
 
         // Create form data for files only
         const apiFormData = new FormData();
         apiFormData.append('document1', formData.get('document1'));
         apiFormData.append('document2', formData.get('document2'));
 
+        // Send API key in Authorization header (safer than multipart)
+        const headers = {};
+        if (userApiKey) {
+            headers['Authorization'] = `Bearer ${userApiKey}`;
+        }
+
         const response = await makeApiCall(url.toString(), {
             method: 'POST',
+            headers,
             body: apiFormData
         });
 
@@ -517,12 +531,23 @@ document.getElementById('textAnalysisForm').addEventListener('submit', async (e)
             doc2_text: requestBody.doc2_text
         };
 
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (userApiKey) {
+            headers['Authorization'] = `Bearer ${userApiKey}`;
+        }
+        
+        // Remove API key from request body when using header
+        const requestBodyCopy = { ...requestBody };
+        if (userApiKey) {
+            requestBodyCopy.llm_config.api_key = '';
+        }
+
         const response = await makeApiCall(`${API_BASE_URL}/api/analyze-texts`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestBody)
+            headers,
+            body: JSON.stringify(requestBodyCopy)
         });
 
         const result = await response.json();
@@ -588,19 +613,19 @@ function displayResults(result) {
         }
     };
 
-    // Create summary section
+    // Create summary section with XSS protection
     const summaryHTML = `
         <div class="summary-grid">
             <div class="summary-card">
-                <h3>${result.summary.critical_changes}</h3>
+                <h3>${escapeHtml(result.summary.critical_changes)}</h3>
                 <p>Critical Changes</p>
             </div>
             <div class="summary-card">
-                <h3>${result.summary.minor_changes}</h3>
+                <h3>${escapeHtml(result.summary.minor_changes)}</h3>
                 <p>Minor Changes</p>
             </div>
             <div class="summary-card">
-                <h3>${result.summary.formatting_changes}</h3>
+                <h3>${escapeHtml(result.summary.formatting_changes)}</h3>
                 <p>Formatting Changes</p>
             </div>
         </div>
@@ -608,61 +633,69 @@ function displayResults(result) {
         <div style="margin-bottom: 2rem;">
             <h3 style="margin-bottom: 1rem;">Analysis Summary</h3>
             <p style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <strong>Most Affected Party:</strong> ${result.summary.most_affected_party}
+                <strong>Most Affected Party:</strong> ${escapeHtml(result.summary.most_affected_party)}
             </p>
             <p style="background: #f7fafc; padding: 1rem; border-radius: 8px;">
-                <strong>Overall Assessment:</strong> ${result.summary.overall_assessment}
+                <strong>Overall Assessment:</strong> ${escapeHtml(result.summary.overall_assessment)}
             </p>
         </div>
     `;
 
-    // Create changes section
-    const changesHTML = result.changes.map(change => `
-        <div class="change-item ${change.change_type.toLowerCase()}">
-            <div class="change-header">
-                <span class="change-type ${change.change_type.toLowerCase()}">${change.change_type}</span>
-                <span class="confidence-score">Confidence: ${(change.confidence_score * 100).toFixed(1)}%</span>
-            </div>
-            
-            <div class="change-details">
-                <div>
-                    <h4 style="margin-bottom: 0.5rem;">Description</h4>
-                    <p style="margin-bottom: 1rem;">${change.description}</p>
+    // Create changes section with XSS protection
+    const changesHTML = result.changes.map(change => {
+        // Validate and sanitize change type
+        const validChangeTypes = ['critical', 'minor', 'formatting'];
+        const changeType = validChangeTypes.includes(change.change_type?.toLowerCase()) 
+            ? change.change_type.toLowerCase() 
+            : 'minor';
+        
+        return `
+            <div class="change-item ${changeType}">
+                <div class="change-header">
+                    <span class="change-type ${changeType}">${escapeHtml(change.change_type)}</span>
+                    <span class="confidence-score">Confidence: ${escapeHtml((change.confidence_score * 100).toFixed(1))}%</span>
                 </div>
                 
-                ${change.old_text && change.new_text ? `
-                <div class="change-text">
+                <div class="change-details">
                     <div>
-                        <h5 style="margin-bottom: 0.5rem;">Old Text</h5>
-                        <div class="text-block old-text">${change.old_text}</div>
+                        <h4 style="margin-bottom: 0.5rem;">Description</h4>
+                        <p style="margin-bottom: 1rem;">${escapeHtml(change.description)}</p>
                     </div>
+                    
+                    ${change.old_text && change.new_text ? `
+                    <div class="change-text">
+                        <div>
+                            <h5 style="margin-bottom: 0.5rem;">Old Text</h5>
+                            <div class="text-block old-text">${escapeHtml(change.old_text)}</div>
+                        </div>
+                        <div>
+                            <h5 style="margin-bottom: 0.5rem;">New Text</h5>
+                            <div class="text-block new-text">${escapeHtml(change.new_text)}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    ${change.section ? `
                     <div>
-                        <h5 style="margin-bottom: 0.5rem;">New Text</h5>
-                        <div class="text-block new-text">${change.new_text}</div>
+                        <strong>Section:</strong> ${escapeHtml(change.section)}
                     </div>
+                    ` : ''}
+                    
+                    ${change.legal_implications ? `
+                    <div>
+                        <strong>Legal Implications:</strong> ${escapeHtml(change.legal_implications)}
+                    </div>
+                    ` : ''}
+                    
+                    ${change.affected_parties && change.affected_parties.length > 0 ? `
+                    <div>
+                        <strong>Affected Parties:</strong> ${escapeHtml(change.affected_parties.join(', '))}
+                    </div>
+                    ` : ''}
                 </div>
-                ` : ''}
-                
-                ${change.section ? `
-                <div>
-                    <strong>Section:</strong> ${change.section}
-                </div>
-                ` : ''}
-                
-                ${change.legal_implications ? `
-                <div>
-                    <strong>Legal Implications:</strong> ${change.legal_implications}
-                </div>
-                ` : ''}
-                
-                ${change.affected_parties && change.affected_parties.length > 0 ? `
-                <div>
-                    <strong>Affected Parties:</strong> ${change.affected_parties.join(', ')}
-                </div>
-                ` : ''}
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 
     contentDiv.innerHTML = summaryHTML + `
         <h3 style="margin-bottom: 1rem;">Detailed Changes</h3>
@@ -672,11 +705,11 @@ function displayResults(result) {
             <h3 style="margin-bottom: 1rem;">📄 Full Document Comparison</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
                 <div>
-                    <h4 style="margin-bottom: 1rem; color: #4a5568;">${result.document1_name}</h4>
+                    <h4 style="margin-bottom: 1rem; color: #4a5568;">${escapeHtml(result.document1_name)}</h4>
                     <div id="doc1FullText" style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; font-family: monospace; font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; max-height: 500px; overflow-y: auto;"></div>
                 </div>
                 <div>
-                    <h4 style="margin-bottom: 1rem; color: #4a5568;">${result.document2_name}</h4>
+                    <h4 style="margin-bottom: 1rem; color: #4a5568;">${escapeHtml(result.document2_name)}</h4>
                     <div id="doc2FullText" style="background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.5rem; font-family: monospace; font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; max-height: 500px; overflow-y: auto;"></div>
                 </div>
             </div>
@@ -684,9 +717,9 @@ function displayResults(result) {
         
         <div style="margin-top: 2rem; padding: 1rem; background: #f7fafc; border-radius: 8px;">
             <small style="color: #4a5568;">
-                <strong>Analysis completed:</strong> ${result.analysis_timestamp}<br>
-                <strong>Documents:</strong> ${result.document1_name} vs ${result.document2_name}<br>
-                <strong>LLM:</strong> ${result.llm_config.provider_name} - ${result.llm_config.model}
+                <strong>Analysis completed:</strong> ${escapeHtml(result.analysis_timestamp)}<br>
+                <strong>Documents:</strong> ${escapeHtml(result.document1_name)} vs ${escapeHtml(result.document2_name)}<br>
+                <strong>LLM:</strong> ${escapeHtml(result.llm_config.provider_name)} - ${escapeHtml(result.llm_config.model)}
             </small>
         </div>
     `;
@@ -722,7 +755,8 @@ function populateDocumentComparison(result) {
 }
 
 function highlightChangesInText(text, changes, type) {
-    let highlightedText = text;
+    // First escape the entire text to prevent XSS
+    let highlightedText = escapeHtml(text);
 
     // Sort changes by position (if we had position info) or by length (longest first)
     const sortedChanges = changes
@@ -731,18 +765,28 @@ function highlightChangesInText(text, changes, type) {
 
     for (const change of sortedChanges) {
         const searchText = type === 'old' ? change.old_text : change.new_text;
-        const changeClass = change.change_type.toLowerCase();
+        const changeClass = change.change_type?.toLowerCase() || 'minor';
+        
+        // Validate change class
+        const validChangeTypes = ['critical', 'minor', 'formatting'];
+        const safeChangeClass = validChangeTypes.includes(changeClass) ? changeClass : 'minor';
 
-        if (searchText && highlightedText.includes(searchText)) {
-            const highlightColor = changeClass === 'critical' ? '#fed7d7' :
-                changeClass === 'minor' ? '#faf089' : '#e6fffa';
-            const borderColor = changeClass === 'critical' ? '#fc8181' :
-                changeClass === 'minor' ? '#f6e05e' : '#81e6d9';
+        if (searchText) {
+            // Escape the search text to match the escaped content
+            const escapedSearchText = escapeHtml(searchText);
+            
+            if (highlightedText.includes(escapedSearchText)) {
+                const highlightColor = safeChangeClass === 'critical' ? '#fed7d7' :
+                    safeChangeClass === 'minor' ? '#faf089' : '#e6fffa';
+                const borderColor = safeChangeClass === 'critical' ? '#fc8181' :
+                    safeChangeClass === 'minor' ? '#f6e05e' : '#81e6d9';
 
-            highlightedText = highlightedText.replace(
-                searchText,
-                `<span style="background: ${highlightColor}; border: 1px solid ${borderColor}; padding: 2px 4px; border-radius: 3px; font-weight: 600;">${searchText}</span>`
-            );
+                // Replace with safe HTML (searchText is already escaped)
+                highlightedText = highlightedText.replace(
+                    escapedSearchText,
+                    `<span style="background: ${highlightColor}; border: 1px solid ${borderColor}; padding: 2px 4px; border-radius: 3px; font-weight: 600;">${escapedSearchText}</span>`
+                );
+            }
         }
     }
 

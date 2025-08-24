@@ -283,6 +283,15 @@ textarea {
     transition: border-color 0.3s ease;
 }
 
+/* Normalize control heights across browsers for consistency */
+select,
+input[type="password"],
+input[type="text"],
+input[type="number"] {
+    height: 48px; /* consistent control height */
+    line-height: 1.5; /* normalize line-height for consistent baseline */
+}
+
 input:focus,
 select:focus,
 textarea:focus {
@@ -519,4 +528,38 @@ textarea {
     .change-text {
         grid-template-columns: 1fr;
     }
+}
+
+/* Ensure consistent heights and appearance in the API Keys panel */
+#userApiKeyProvider,
+#userApiKey {
+    display: block;
+    box-sizing: border-box;
+    height: 48px !important; /* match the global form control height */
+    line-height: 1.5 !important; /* consistent with global controls */
+    padding: 12px !important; /* vertical padding for 48px height */
+    font-size: 1rem !important; /* consistent with global controls */
+    border-width: 2px !important;
+    border-style: solid !important;
+    border-color: #e2e8f0 !important;
+    border-radius: 8px !important;
+    vertical-align: top; /* ensure both elements align to same baseline */
+}
+
+/* Normalize select native styling to match inputs exactly */
+#userApiKeyProvider {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    background-image:
+      linear-gradient(45deg, transparent 50%, #4a5568 50%),
+      linear-gradient(135deg, #4a5568 50%, transparent 50%),
+      linear-gradient(to right, #e2e8f0, #e2e8f0);
+    background-position:
+      calc(100% - 20px) calc(50% - 3px),
+      calc(100% - 14px) calc(50% - 3px),
+      calc(100% - 2.5rem) 50%;
+    background-size: 6px 6px, 6px 6px, 1px 24px;
+    background-repeat: no-repeat;
+    padding-right: 2.5rem !important; /* space for custom arrow */
 }

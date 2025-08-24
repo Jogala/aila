@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile, status
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -76,14 +76,24 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Add CORS middleware
+# Configure CORS from environment (safe defaults)
+cors_origins_env = os.getenv("AILA_CORS_ALLOW_ORIGINS", "")
+if cors_origins_env:
+    allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+else:
+    # Development convenience: allow localhost where frontend may run
+    allowed_origins = ["http://localhost:8000", "http://127.0.0.1:8000"] if os.getenv("AILA_ENVIRONMENT", "development") == "development" else []
+
+allow_credentials = os.getenv("AILA_CORS_ALLOW_CREDENTIALS", "false").lower() == "true"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+logger.info(f"CORS configured. Origins={allowed_origins} Credentials={allow_credentials}")
 
 
 def allowed_file(filename: str) -> bool:
@@ -155,10 +165,11 @@ async def analyze_documents_endpoint(
     provider_name: ProviderName,
     model: str,
     temperature: float,
-    api_key: str,
+    api_key: str = Form(""),
     document1: UploadFile = File(..., description="First document to compare"),
     document2: UploadFile = File(..., description="Second document to compare"),
     prompt_template: str = "prompt_2.txt",
+    authorization: str | None = Header(default=None, alias="Authorization"),
 ) -> AnalysisResultWithTexts:
     """Analyze two documents and return changes."""
     try:
@@ -206,13 +217,20 @@ async def analyze_documents_endpoint(
             doc1_text = load_document(filepath1)
             doc2_text = load_document(filepath2)
 
+            # Determine API key from Authorization header or form field
+            token = ""
+            if authorization and authorization.lower().startswith("bearer "):
+                token = authorization.split(" ", 1)[1].strip()
+            else:
+                token = api_key or ""
+
             # Apply API key fallback logic and create LlmConfig
-            api_key = check_fallback_to_server_llm_api_key(api_key, provider_name)
+            token = check_fallback_to_server_llm_api_key(token, provider_name)
             llm_config = LlmConfig(
                 provider_name=provider_name,
                 model=model,
                 temperature=temperature,
-                api_key=api_key,
+                api_key=token,
             )
 
             # Perform analysis
@@ -253,13 +271,20 @@ async def analyze_documents_endpoint(
 
 
 @app.post("/analyze-texts", response_model=AnalysisResult)
-async def analyze_texts_endpoint(request: AnalyzeTextsRequest) -> AnalysisResult:
+async def analyze_texts_endpoint(request: AnalyzeTextsRequest, authorization: str | None = Header(default=None, alias="Authorization")) -> AnalysisResult:
     """Analyze two text documents directly - useful for testing."""
     try:
         logger.info(f"Starting text analysis: {request.name_doc1} vs {request.name_doc2}")
 
+        # Determine API key from Authorization header or request body
+        token: str
+        if authorization and authorization.lower().startswith("bearer "):
+            token = authorization.split(" ", 1)[1].strip()
+        else:
+            token = request.llm_config.api_key or ""
+
         # Apply API key fallback logic
-        api_key = check_fallback_to_server_llm_api_key(request.llm_config.api_key, request.llm_config.provider_name)
+        api_key = check_fallback_to_server_llm_api_key(token, request.llm_config.provider_name)
 
         # Create updated config with fallback API key
         llm_config = LlmConfig(

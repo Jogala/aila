@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -34,6 +35,25 @@ app.mount("/api", api_app)
 # Mount static files (CSS, JS, etc.)
 if static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
+# Configure TrustedHostMiddleware from environment
+trusted_hosts_env = os.getenv("AILA_TRUSTED_HOSTS", "").strip()
+if trusted_hosts_env:
+    trusted_hosts = [h.strip() for h in trusted_hosts_env.split(",") if h.strip()]
+else:
+    railway_host = os.getenv("RAILWAY_PUBLIC_DOMAIN") or os.getenv("RAILWAY_STATIC_URL")
+    trusted_hosts = []
+    if railway_host:
+        trusted_hosts.append(railway_host)
+    if os.getenv("AILA_ENVIRONMENT", "development") == "development":
+        trusted_hosts.extend(["localhost", "127.0.0.1"])
+    # If still empty (e.g., prod without envs), allow all but log a note via print
+    if not trusted_hosts:
+        print("[WARN] No trusted hosts configured; allowing all (*). Set AILA_TRUSTED_HOSTS to lock down.")
+        trusted_hosts = ["*"]
+
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=trusted_hosts)
+print(f"TrustedHostMiddleware configured with hosts: {trusted_hosts}")
 
 
 @app.get("/", response_model=None)

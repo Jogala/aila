@@ -252,13 +252,11 @@ async function updateModelsForProvider(provider) {
     modelSelect.disabled = true;
     modelSelect.innerHTML = '<option disabled selected>Loading models...</option>';
 
-    // Build request (endpoint expects query param on POST)
+    // Build request (use GET with query param)
     const url = new URL(`${API_BASE_URL}/api/models`);
     url.searchParams.set('provider_name', provider);
 
-    const response = await makeApiCall(url.toString(), {
-        method: 'POST'
-    });
+    const response = await makeApiCall(url.toString());
 
     const models = await response.json();
 

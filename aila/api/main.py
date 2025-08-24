@@ -121,7 +121,13 @@ async def health_check() -> HealthResponse:
 
 @app.post("/models", response_model=list[str])
 async def get_available_models(provider_name: ProviderName) -> list[str]:
-    """Get available models endpoint."""
+    """Get available models endpoint (POST for backward compatibility)."""
+    return get_models(provider_name)
+
+
+@app.get("/models", response_model=list[str])
+async def get_available_models_get(provider_name: ProviderName) -> list[str]:
+    """Get available models endpoint (GET for proxies/CDNs that block POST)."""
     return get_models(provider_name)
 
 

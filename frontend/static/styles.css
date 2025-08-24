@@ -297,8 +297,14 @@ textarea {
 
 .form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* Use minmax(0,1fr) to ensure equal columns that can shrink properly */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+}
+
+/* Allow grid children to shrink within their track to avoid visual mismatch */
+.form-row .form-group {
+    min-width: 0;
 }
 
 .btn {

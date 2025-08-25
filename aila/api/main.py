@@ -16,7 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from aila.config import get_server_api_keys
+from aila.config import get_config, get_server_api_keys
 from aila.legal_analyzer import AnalysisResult, analyze_documents
 from aila.llm_interface import get_llm_interface
 from aila.llm_models import LlmConfig, ProviderName, get_models
@@ -82,7 +82,11 @@ if cors_origins_env:
     allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
 else:
     # Development convenience: allow localhost where frontend may run
-    allowed_origins = ["http://localhost:8000", "http://127.0.0.1:8000"] if os.getenv("AILA_ENVIRONMENT", "development") == "development" else []
+    allowed_origins = (
+        ["http://localhost:8000", "http://127.0.0.1:8000"]
+        if os.getenv("AILA_ENVIRONMENT", "development") == "development"
+        else []
+    )
 
 allow_credentials = os.getenv("AILA_CORS_ALLOW_CREDENTIALS", "false").lower() == "true"
 
@@ -145,6 +149,17 @@ async def get_available_models_get(provider_name: ProviderName) -> list[str]:
 async def get_api_keys_status() -> bool:
     """Check which API keys are available on the server."""
     return any(key and key.strip() for key in SERVER_API_KEYS.values())
+
+
+@app.get("/prompt-template", response_model=str)
+async def get_prompt_template_status() -> str:
+    """Check which prompt template is used on the server."""
+
+    config = get_config()
+    with open(config.prompt_templates_dir / "prompt_2.txt", "r", encoding="utf-8") as f:
+        template_txt = f.read()
+
+    return template_txt
 
 
 @app.get("/debug/config")
@@ -271,7 +286,9 @@ async def analyze_documents_endpoint(
 
 
 @app.post("/analyze-texts", response_model=AnalysisResult)
-async def analyze_texts_endpoint(request: AnalyzeTextsRequest, authorization: str | None = Header(default=None, alias="Authorization")) -> AnalysisResult:
+async def analyze_texts_endpoint(
+    request: AnalyzeTextsRequest, authorization: str | None = Header(default=None, alias="Authorization")
+) -> AnalysisResult:
     """Analyze two text documents directly - useful for testing."""
     try:
         logger.info(f"Starting text analysis: {request.name_doc1} vs {request.name_doc2}")

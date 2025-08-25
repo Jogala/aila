@@ -15,6 +15,8 @@ function escapeHtml(unsafe) {
 const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:8000';
 // Request timeout for analysis calls (defaults to 120s if not configured)
 const REQUEST_TIMEOUT_MS = window.APP_CONFIG?.REQUEST_TIMEOUT_MS ?? 120000;
+// Default prompt template (UI input removed)
+const DEFAULT_PROMPT_TEMPLATE = 'prompt_2.txt';
 let serverConnected = false;
 let serverApiKeysStatus = null;
 
@@ -47,7 +49,7 @@ async function checkServerStatus() {
 
             // Populate model list for current provider once connected
             try {
-                const provider = document.getElementById('llmProvider')?.value;
+                const provider = document.getElementById('userApiKeyProvider')?.value;
                 if (provider) {
                     await updateModelsForProvider(provider);
                 }
@@ -229,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkServerStatus();
 
     // When provider changes, update available models
-    const providerSelect = document.getElementById('llmProvider');
+    const providerSelect = document.getElementById('userApiKeyProvider');
     if (providerSelect) {
         providerSelect.addEventListener('change', async (e) => {
             const provider = e.target.value;
@@ -333,23 +335,15 @@ async function makeApiCall(url, options = {}) {
 
 // Validate API key provider matches LLM provider
 function validateApiKeyProvider() {
+    // Provider is now sourced from API Key Provider; only validate key presence when required
     const userKeysPanel = document.getElementById('userApiKeysPanel');
     if (!userKeysPanel || userKeysPanel.style.display === 'none') {
-        return true; // No validation needed if user keys panel is hidden
+        return true;
     }
-
-    const llmProvider = document.getElementById('llmProvider').value;
-    const userApiKeyProvider = document.getElementById('userApiKeyProvider').value;
-    
-    if (llmProvider !== userApiKeyProvider) {
-        throw new Error(`API key provider (${userApiKeyProvider}) must match LLM provider (${llmProvider})`);
-    }
-    
     const userApiKey = document.getElementById('userApiKey').value;
     if (!userApiKey || userApiKey.trim() === '') {
         throw new Error('API key is required when server keys are not configured');
     }
-    
     return true;
 }
 
@@ -359,16 +353,7 @@ function validateCanProceedWithAnalysis() {
         throw new Error('API key is required when server keys are not configured');
     }
     
-    // Only check provider match if user actually provided an API key
-    const userApiKey = document.getElementById('userApiKey').value.trim();
-    if (userApiKey.length > 0) {
-        const llmProvider = document.getElementById('llmProvider').value;
-        const userApiKeyProvider = document.getElementById('userApiKeyProvider').value;
-        
-        if (llmProvider !== userApiKeyProvider) {
-            throw new Error(`API key provider (${userApiKeyProvider}) must match LLM provider (${llmProvider})`);
-        }
-    }
+    // Provider is determined by API Key Provider, so no provider mismatch validation needed
     
     return true;
 }
@@ -435,10 +420,10 @@ document.getElementById('fileAnalysisForm').addEventListener('submit', async (e)
         window.lastAnalyzedTexts = null;
 
         // Get LLM settings from the shared panel
-        const llmProvider = document.getElementById('llmProvider').value;
+        const llmProvider = document.getElementById('userApiKeyProvider').value;
         const llmModel = document.getElementById('llmModel').value;
         const llmTemperature = document.getElementById('llmTemperature').value;
-        const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
+        const llmPromptTemplate = DEFAULT_PROMPT_TEMPLATE;
         const userApiKey = getUserApiKey();
 
         // Create URL with query parameters for non-file data (excluding api_key)
@@ -505,10 +490,10 @@ document.getElementById('textAnalysisForm').addEventListener('submit', async (e)
         validateCanProceedWithAnalysis();
         
         // Get LLM settings from the shared panel
-        const llmProvider = document.getElementById('llmProvider').value;
+        const llmProvider = document.getElementById('userApiKeyProvider').value;
         const llmModel = document.getElementById('llmModel').value;
         const llmTemperature = parseFloat(document.getElementById('llmTemperature').value);
-        const llmPromptTemplate = document.getElementById('llmPromptTemplate').value;
+        const llmPromptTemplate = DEFAULT_PROMPT_TEMPLATE;
         const userApiKey = getUserApiKey();
 
         const requestBody = {

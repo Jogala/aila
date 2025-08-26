@@ -298,7 +298,8 @@ async def analyze_texts_endpoint(
         if authorization and authorization.lower().startswith("bearer "):
             token = authorization.split(" ", 1)[1].strip()
         else:
-            token = request.llm_config.api_key or ""
+            # Extract user-provided API key from request body (SecretStr)
+            token = request.llm_config.api_key.get_secret_value()
 
         # Apply API key fallback logic
         api_key = check_fallback_to_server_llm_api_key(token, request.llm_config.provider_name)

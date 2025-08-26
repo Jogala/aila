@@ -36,7 +36,7 @@ def get_llm_interface(llm_config: LlmConfig) -> LlmInterface:
 
 def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     def analyze(prompt: str) -> str:
-        with maybe_closing(openai.OpenAI(api_key=llm_config.api_key)) as client:
+        with maybe_closing(openai.OpenAI(api_key=llm_config.api_key.get_secret_value())) as client:
             llm_properties = get_model_properties(ProviderName.OPENAI, llm_config.model)
 
             messages = [
@@ -71,7 +71,7 @@ def _build_openai_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
 
 def _build_anthropic_analyzer(llm_config: LlmConfig) -> AnalyzeFn:
     def analyze(prompt: str) -> str:
-        with maybe_closing(anthropic.Anthropic(api_key=llm_config.api_key)) as client:
+        with maybe_closing(anthropic.Anthropic(api_key=llm_config.api_key.get_secret_value())) as client:
             llm_properties = get_model_properties(ProviderName.ANTHROPIC, llm_config.model)
             response = client.messages.create(
                 model=llm_config.model,

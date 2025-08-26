@@ -1,0 +1,25 @@
+{
+  "name": "aila-legal-advisor",
+  "version": "1.0.0",
+  "description": "AI-powered legal document change analyzer with Codex and Claude Code integration",
+  "scripts": {
+    "codex": "codex",
+    "codex:start": "codex start",
+    "codex:stop": "codex stop",
+    "codex:status": "codex status",
+    "claude": "claude-code",
+    "claude:help": "claude-code --help",
+    "claude:version": "claude-code --version"
+  },
+  "dependencies": {
+    "@microsoft/codex": "latest",
+    "@anthropic-ai/claude-code": "latest"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["legal", "ai", "document", "analyzer", "codex", "claude-code"],
+  "author": "Joachim Rosenberger <joachim.h.rosenberger@gmail.com>",
+  "license": "MIT"
+}

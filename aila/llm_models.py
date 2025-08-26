@@ -2,7 +2,7 @@ from enum import StrEnum
 from typing import List
 
 import tiktoken
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class ProviderName(StrEnum):
@@ -25,7 +25,7 @@ class LlmConfig(BaseModel):
     provider_name: ProviderName
     model: str
     temperature: float
-    api_key: str
+    api_key: SecretStr
     model_config = ConfigDict(frozen=True)
 
 

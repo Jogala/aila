@@ -2,8 +2,8 @@
 
 Aila detects changes in legal documents using Anthropic or OpenAI APIs.
 
-**Demo only. Not legal advice.** 
-No attorney–client relationship. 
+**Demo only. Not legal advice.**
+No attorney–client relationship.
 Outputs may be incorrect.  
 **Do not use for real cases or confidential data.**
 
@@ -37,6 +37,7 @@ uvicorn frontend.main:app --host 0.0.0.0 --port 8000 --reload
 ## Usage
 
 ### Python Package
+
 ```python
 from aila.legal_analyzer import analyze_documents
 from aila.llm_interface import init_llm_interface
@@ -48,6 +49,7 @@ result = analyze_documents(llm_interface, "doc1.pdf", "doc2.pdf", "prompt_1.txt"
 ```
 
 ### REST API
+
 ```bash
 curl -X POST "http://localhost:8000/analyze?provider_name=anthropic&model=claude-3-5-haiku-20241022" \
   -F "document1=@doc1.pdf" \
@@ -55,8 +57,8 @@ curl -X POST "http://localhost:8000/analyze?provider_name=anthropic&model=claude
 ```
 
 ### Web Interface
-![Screen Recording](documentation/ui_demo.gif)
 
+![Screen Recording](documentation/ui_demo.gif)
 
 ## Requirements
 
@@ -99,6 +101,7 @@ The API will be available at http://localhost:8000
 ### Production Deployment
 
 For production, consider:
+
 - Using environment variables instead of .env file
 - Adding a reverse proxy (nginx example included in docker-compose.yml)
 - Setting up SSL certificates
@@ -107,6 +110,7 @@ For production, consider:
 ### Frontend
 
 The frontend includes:
+
 - **Static files:** HTML, CSS, JS in `frontend/static/` directory
 - **FastAPI wrapper:** `frontend/main.py` that serves both frontend and API
 - **Configuration system:** `frontend/generate_config.py` for environment-based config
@@ -116,21 +120,23 @@ The frontend includes:
 Browser JavaScript cannot read `.env` files or server environment variables directly. The `generate_config.py` script serves as a bridge that:
 
 1. **Reads** server environment variables (from `.env` file)
-2. **Transforms** them into JavaScript format 
+2. **Transforms** them into JavaScript format
 3. **Embeds** them in `frontend/static/config.js`
 4. **Serves** them to the browser at runtime
 
 **Environment Configuration:**
+
 - `AILA_ENVIRONMENT=development` → API connects to `http://localhost:8000`
 - `AILA_ENVIRONMENT=staging` → API uses same origin (Railway URL)
 - `AILA_ENVIRONMENT=production` → API uses same origin (production URL)
 
 **Usage:**
+
 ```bash
 # Generate config for current environment
 python frontend/generate_config.py
 
-# Generate config for specific environment  
+# Generate config for specific environment
 AILA_ENVIRONMENT=staging python frontend/generate_config.py
 ```
 
@@ -156,5 +162,6 @@ ruff format .
 ```
 
 ## License & Notices
-- License: MIT (or Apache-2.0).  
+
+- License: MIT (or Apache-2.0).
 - Not affiliated with any law firm or provider. Trademarks belong to their owners. Use of LLM APIs is subject to their terms.

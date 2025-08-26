@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude doctor)",
+      "Bash(tree:*)",
+      "Bash(pkill:*)",
+      "Bash(mv:*)",
+      "Bash(sudo kill:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(poetry show:*)",
+      "Bash(poetry lock:*)",
+      "Bash(poetry install:*)",
+      "Bash(poetry run pyright:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": []
+  }
+}
